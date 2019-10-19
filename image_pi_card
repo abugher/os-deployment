@@ -1,0 +1,240 @@
+#!/bin/bash
+
+output() {
+  echo "OUTPUT:  ${1}"
+}
+
+
+fail() {
+  echo "ERROR:  ${1}" >&2
+  exit 1
+}
+
+
+get_root() {
+  output "We're going to need some root.  Authenticate for sudo."
+  sudo -v || fail "Failed to get root."
+}
+
+
+keep_root() {
+  while sleep 60; do
+    sudo -v
+  done
+}
+
+
+target_host_name="${1}"
+case "${target_host_name}" in
+  partybus)
+    card_device=/dev/sdc
+    image=~/images/banana_pi/armbian.m2.img
+    ip_address=192.168.11.64
+    label=log
+    mount_point=/var/log
+    wired_interface=eth0
+    wireless_interface=wlan0
+    ;;
+  files)
+    card_device=/dev/sdc
+    #image=~/images/banana_pi/armbian.m1.img
+    image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
+    ip_address=192.168.11.62
+    label=log
+    mount_point=/var/log
+    # We use the systemd method to disable "predictable" (and yet insanely hard
+    # to predict) interface naming, and systemd seems to be in use, yet this
+    # abomination is the default name of the interface:
+    wired_interface=enx001e0636856d
+    wireless_interface=wlan0
+    ;;
+  spy)
+    card_device=/dev/sdc
+    image=~/images/orange_pi/Armbian_5.65_Orangepipcplus_Debian_stretch_next_4.14.78.img
+    #ip_address=192.168.11.?
+    label=motion
+    mount_point=/var/lib/motion
+    wired_interface=eth0
+    wireless_interface=wlan0
+    fail "spy is not configured"
+    ;;
+  *)
+    fail "Unrecognized target host name:  '${target_host_name}'"
+    ;;
+esac
+
+placeholder_user="root-at-${target_host_name}"
+root_partition="${card_device}1"
+big_partition="${card_device}2"
+
+
+write_image() {
+  output "Writing image."
+  # https://www.armbian.com/orange-pi-pc-plus/
+  # https://dl.armbian.com/orangepipcplus/Debian_stretch_next.7z.torrent
+  dd if=$image bs=1M | pv | sudo dd bs=1M of=$card_device \
+    || fail "Failed to write image."
+  sudo parted $card_device resizepart 1 10240MB \
+    || fail "Failed to resize root partition."
+  sudo e2fsck -f $root_partition \
+    || fail "Failed to check root filesystem."
+  sudo resize2fs $root_partition \
+    || fail "Failed to resize root filesystem."
+  sudo tune2fs -i 0 -c 0 $root_partition \
+    || fail "Failed to tune root filesystem."
+}
+
+
+create_big_volume() {
+  output "Getting storage parameters."
+  parted_output=$(
+    sudo parted $card_device unit s print free \
+      || fail "Failed to analyze device:  '${card_device}'"
+  )
+
+  output "Writing big partition."
+  sudo parted $card_device mkpart primary 10241MB -- -1MB \
+    || fail "Failed to write big partition."
+  output "Writing big filesystem."
+  sudo mkfs.f2fs -l $label $big_partition \
+    || fail "Failed to write big filesystem."
+}
+
+
+configure_os() {
+  echo "LABEL=${label} ${mount_point} f2fs defaults,noatime,nodiratime 0 2" | sudo tee -a /mnt/card/etc/fstab \
+    || fail "Failed to write fstab."
+
+  # This is for debugging.  log2ram is probably good for sd card life.
+  sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
+    || fail "Failed to disabled log2ram."
+
+  # Do this manually (once):
+  #sudo passwd root-at-host
+
+  sudo sed -i "s#^root:.*\$#$(
+    sudo grep "^${placeholder_user}" /etc/shadow \
+      | sed "s/${placeholder_user}/root/" \
+      || fail "failed to extract hash for root (${placeholder_user})"
+  )#" /mnt/card/etc/shadow \
+    || fail "Failed to write root password."
+
+  for file in \
+    /mnt/card/etc/profile.d/armbian-check-first-login-reboot.sh \
+    /mnt/card/etc/profile.d/armbian-check-first-login.sh \
+    /mnt/card/etc/ssh/ssh_host_*_key* \
+    /mnt/card/etc/systemd/network/99-default.link \
+    /mnt/card/etc/systemd/system/default.target.wants/ssh.service \
+    /mnt/card/etc/systemd/system/multi-user.target.wants/NetworkManager.service \
+    /mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service \
+    /mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service \
+    /mnt/card/lib/systemd/system/NetworkManager.service \
+    /mnt/card/lib/systemd/system/armbian-firstrun-config.service \
+    /mnt/card/lib/systemd/system/armbian-firstrun.service \
+    /mnt/card/lib/systemd/system/armbian-resize-filesystem.service \
+    /mnt/card/usr/lib/armbian/armbian-firstrun \
+    /mnt/card/usr/lib/armbian/armbian-firstrun-config \
+    /mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/NetworkManager.service \
+  ; do
+    sudo rm -f $file \
+      || fail "Failed to remove:  ${file}"
+  done
+
+  for file in \
+    /mnt/card/etc/systemd/network/99-default.link \
+    /mnt/card/lib/systemd/system/armbian-firstrun-config.service \
+    /mnt/card/lib/systemd/system/armbian-firstrun.service \
+    /mnt/card/lib/systemd/system/armbian-resize-filesystem.service \
+    /mnt/card/lib/systemd/system/NetworkManager.service \
+    /mnt/card/usr/lib/armbian/armbian-firstrun-config \
+    /mnt/card/usr/lib/armbian/armbian-firstrun \
+  ; do
+    sudo ln -s /dev/null $file \
+      || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
+  done
+
+  read wpa_psk < ~/sensitive/accounts/network/puppies/wpa_psk.txt \
+    || fail "Failed to read WPA PSK."
+  sudo tee /mnt/card/etc/network/interfaces.d/"${wireless_interface}" << EOF
+iface ${wireless_interface} inet static
+    wpa-essid           puppies
+    wpa-psk             $wpa_psk
+    address             $ip_address
+    netmask             255.255.255.0
+    gateway             192.168.11.1
+    dns-nameservers     192.168.11.54
+    dns-search          neuronpointer.net
+EOF
+  if ! test 0 == "${?}"; then
+    fail "Failed to write:  interfaces.d/${wireless_interface}" 
+  fi
+  sudo tee /mnt/card/etc/network/interfaces.d/"${wired_interface}" << EOF
+iface ${wired_interface} inet static
+    address             $ip_address
+    netmask             255.255.255.0
+    gateway             192.168.11.1
+    dns-nameservers     192.168.11.54
+    dns-search          neuronpointer.net
+EOF
+  if ! test 0 == "${?}"; then
+    fail "Failed to write:  interfaces.d/${wired_interface}" 
+  fi
+  echo "auto ${wired_interface}" | sudo tee -a /mnt/card/etc/network/interfaces \
+    || fail "Failed to write to interfaces file."
+
+  
+  sudo mkdir -p /mnt/card/etc/ssh/ \
+    || fail "Failed to create ssh configuration directory."
+  {
+    sudo tee -a /mnt/card/etc/ssh/sshd_config \
+      || fail "Failed to write to sshd_config."
+  } << EOF
+AllowUsers root
+HostKey /etc/ssh/ssh_host_rsa_key
+UsePam no
+EOF
+
+  sudo mkdir -p /mnt/card/etc/systemd/system/default.target.wants \
+    || fail "Failed to create some systemd directory."
+  sudo ln -s /lib/systemd/system/ssh.service /mnt/card/etc/systemd/system/default.target.wants/ssh.service \
+    || fail "Failed to write ssh service file."
+
+  sudo touch /mnt/card/etc/ssh/ssh_host_rsa_key \
+    || fail "Failed to initialize SSH host key."
+  sudo chmod 0600 /mnt/card/etc/ssh/ssh_host_rsa_key \
+    || fail "Failed to set permissions on SSH host key."
+  cat ~/control_center/sensitive_ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key | sudo tee /mnt/card/etc/ssh/ssh_host_rsa_key \
+    || fail "Failed to write SSH host key (private)."
+  cat ~/control_center/ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key.pub | sudo tee /mnt/card/etc/ssh/ssh_host_rsa_key.pub \
+    || fail "Failed to write SSH host key (public)."
+
+  sudo rsync -a "/mnt/card${mount_point}/" /mnt/card2/ \
+    || fail "Failed to sync contents of mount point to big partition."
+}
+
+main() {
+  get_root
+  keep_root &
+  sudo_loop_pid=$!
+  if mountpoint /mnt/card > /dev/null 2>&1; then
+    sudo umount /mnt/card \
+      || fail "Failed to preparatively unmount /mnt/card."
+  fi
+  write_image
+  create_big_volume
+  sudo mount $root_partition /mnt/card \
+    || fail "Failed to mount root partition."
+  sudo mount $big_partition /mnt/card2 \
+    || fail "Failed to mount big partition."
+  configure_os
+  sudo umount /mnt/card2 \
+    || fail "Failed to unmount big partition."
+  sudo umount /mnt/card \
+    || fail "Failed to unmount root partition."
+  kill $sudo_loop_pid
+  timeout 5 wait $sudo_loop_pid
+  kill -9 $sudo_loop_pid
+}
+
+
+time main
