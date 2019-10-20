@@ -232,8 +232,6 @@ main() {
   sudo umount /mnt/card \
     || fail "Failed to unmount root partition."
   kill $sudo_loop_pid
-  timeout 5 wait $sudo_loop_pid
-  kill -9 $sudo_loop_pid
 }
 
 
