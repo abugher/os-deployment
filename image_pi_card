@@ -50,13 +50,12 @@ case "${target_host_name}" in
     ;;
   spy)
     card_device=/dev/sdc
-    image=~/images/orange_pi/Armbian_5.65_Orangepipcplus_Debian_stretch_next_4.14.78.img
-    #ip_address=192.168.11.?
+    image=~/images/orange_pi/Armbian_5.91_Orangepipcplus_Debian_buster_next_4.19.59.img
+    ip_address=192.168.11.67
     label=motion
     mount_point=/var/lib/motion
     wired_interface=eth0
     wireless_interface=wlan0
-    fail "spy is not configured"
     ;;
   *)
     fail "Unrecognized target host name:  '${target_host_name}'"
@@ -96,7 +95,7 @@ create_big_volume() {
   sudo parted $card_device mkpart primary 10241MB -- -1MB \
     || fail "Failed to write big partition."
   output "Writing big filesystem."
-  sudo mkfs.f2fs -l $label $big_partition \
+  sudo mkfs.f2fs -f -l $label $big_partition \
     || fail "Failed to write big filesystem."
 }
 
@@ -208,6 +207,8 @@ EOF
   cat ~/control_center/ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key.pub | sudo tee /mnt/card/etc/ssh/ssh_host_rsa_key.pub \
     || fail "Failed to write SSH host key (public)."
 
+  sudo mkdir -p "/mnt/card${mount_point}/" \
+    || fail "Failed to create mount point."
   sudo rsync -a "/mnt/card${mount_point}/" /mnt/card2/ \
     || fail "Failed to sync contents of mount point to big partition."
 }
