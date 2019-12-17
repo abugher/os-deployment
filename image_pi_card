@@ -11,19 +11,6 @@ fail() {
 }
 
 
-get_root() {
-  output "We're going to need some root.  Authenticate for sudo."
-  sudo -v || fail "Failed to get root."
-}
-
-
-keep_root() {
-  while sleep 60; do
-    sudo -v
-  done
-}
-
-
 target_host_name="${1}"
 case "${target_host_name}" in
   partybus)
@@ -65,6 +52,19 @@ esac
 placeholder_user="root-at-${target_host_name}"
 root_partition="${card_device}1"
 big_partition="${card_device}2"
+
+
+get_root() {
+  output "We're going to need some root.  Authenticate for sudo."
+  sudo -v || fail "Failed to get root."
+}
+
+
+keep_root() {
+  while sleep 60; do
+    sudo -v
+  done
+}
 
 
 write_image() {
@@ -202,8 +202,14 @@ EOF
     || fail "Failed to initialize SSH host key."
   sudo chmod 0600 /mnt/card/etc/ssh/ssh_host_rsa_key \
     || fail "Failed to set permissions on SSH host key."
+  if ! test -e ~/control_center/sensitive_ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key; then
+    fail "SSH host key (private) is missing."
+  fi
   cat ~/control_center/sensitive_ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key | sudo tee /mnt/card/etc/ssh/ssh_host_rsa_key \
     || fail "Failed to write SSH host key (private)."
+  if ! test -e ~/control_center/ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key.pub; then
+    fail "SSH host key (public) is missing."
+  fi
   cat ~/control_center/ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key.pub | sudo tee /mnt/card/etc/ssh/ssh_host_rsa_key.pub \
     || fail "Failed to write SSH host key (public)."
 
