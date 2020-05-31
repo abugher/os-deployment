@@ -15,7 +15,7 @@ target_host_name="${1}"
 case "${target_host_name}" in
   partybus)
     card_device=/dev/sdc
-    image=~/images/orange_pi/Armbian_5.91_Orangepipcplus_Debian_buster_next_4.19.59.img
+    #image=~/images/orange_pi/Armbian_5.91_Orangepipcplus_Debian_buster_next_4.19.59.img
     ip_address=192.168.11.64
     label=log
     mount_point=/var/log
@@ -36,12 +36,14 @@ case "${target_host_name}" in
     ;;
   spy)
     card_device=/dev/sdc
-    image=~/images/banana_pi/armbian.m1.img
+    #image=~/images/banana_pi/armbian.m1.img
+    image=~/images/orange_pi/Armbian_5.91_Orangepipcplus_Debian_buster_next_4.19.59.img
     ip_address=192.168.11.67
     label=motion
     mount_point=/var/lib/motion
-    wired_interface=eth0
+    wired_interface=eth0_deactivated
     wireless_interface=wlan0
+    kick_wifi=yes
     ;;
   *)
     fail "Unrecognized target host name:  '${target_host_name}'"
@@ -110,6 +112,8 @@ configure_os() {
   # Do this manually (once):
   #sudo passwd root-at-host
 
+  sudo grep -q "^${placeholder_user}" /etc/shadow \
+    || fail "failed to extract hash for root (${placeholder_user})"
   sudo sed -i "s#^root:.*\$#$(
     sudo grep "^${placeholder_user}" /etc/shadow \
       | sed "s/${placeholder_user}/root/" \
@@ -151,7 +155,7 @@ configure_os() {
       || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
   done
 
-  read wpa_psk < ~/sensitive/accounts/network/puppies/wpa_psk.txt \
+  wpa_psk=$(pass show aaron/network/puppies/wpa_psk) \
     || fail "Failed to read WPA PSK."
   sudo tee /mnt/card/etc/network/interfaces.d/"${wireless_interface}" << EOF
 iface ${wireless_interface} inet static
@@ -211,6 +215,17 @@ EOF
   fi
   cat ~/control_center/ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key.pub | sudo tee /mnt/card/etc/ssh/ssh_host_rsa_key.pub \
     || fail "Failed to write SSH host key (public)."
+
+  if test "yes" = "${kick_wifi}"; then
+  sudo tee /mnt/card/etc/rc.local << EOF
+#!/bin/sh -e
+ifup wlan0
+exit 0
+EOF
+    if ! test 0 == "${?}"; then
+      fail "Failed to write:  /etc/rc.local"
+    fi
+  fi
 
   sudo mkdir -p "/mnt/card${mount_point}/" \
     || fail "Failed to create mount point."
