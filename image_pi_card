@@ -102,18 +102,6 @@ configure_os() {
   sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
     || fail "Failed to disabled log2ram."
 
-  # Do this manually (once):
-  #sudo passwd root-at-host
-
-#  sudo grep -q "^${placeholder_user}" /etc/shadow \
-#    || fail "failed to extract hash for root (${placeholder_user})"
-#  sudo sed -i "s#^root:.*\$#$(
-#    sudo grep "^${placeholder_user}" /etc/shadow \
-#      | sed "s/${placeholder_user}/root/" \
-#      || fail "failed to extract hash for root (${placeholder_user})"
-#  )#" /mnt/card/etc/shadow \
-#    || fail "Failed to write root password."
-
   sudo mkdir -p /mnt/card/root/.ssh \
     || fail "Failed to prepare dot ssh directory."
   sudo tee /mnt/card/root/.ssh/authorized_keys < /home/aaron/.ssh/public \
