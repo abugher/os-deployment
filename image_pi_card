@@ -99,13 +99,16 @@ configure_os() {
     || fail "Failed to write fstab."
 
   # This is for debugging.  log2ram is probably good for sd card life.
-  sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
-    || fail "Failed to disabled log2ram."
+  #sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
+  #  || fail "Failed to disabled log2ram."
 
   sudo mkdir -p /mnt/card/root/.ssh \
     || fail "Failed to prepare dot ssh directory."
   sudo tee /mnt/card/root/.ssh/authorized_keys < /home/aaron/.ssh/public \
     || fail "Failed to install authorized key."
+
+  sudo sed -i 's/^root:.*$/root:*:0:0:root:\/root:\/bin\/bash/' /mnt/card/etc/passwd \
+    || fail "Failed to disable password authentication for root."
 
   for file in \
     /mnt/card/etc/profile.d/armbian-check-first-login-reboot.sh \
@@ -223,10 +226,12 @@ main() {
   get_root
   keep_root &
   sudo_loop_pid=$!
-  if mountpoint /mnt/card > /dev/null 2>&1; then
-    sudo umount /mnt/card \
-      || fail "Failed to preparatively unmount /mnt/card."
-  fi
+  for m in /mnt/card /mnt/card2; do
+    if mountpoint "${m}" > /dev/null 2>&1; then
+      sudo umount "${m}" \
+        || fail "Failed to preparatively unmount /mnt/card."
+    fi
+  done
   write_image
   create_big_volume
   sudo mount $root_partition /mnt/card \
