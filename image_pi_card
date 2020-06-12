@@ -1,5 +1,64 @@
 #!/bin/bash
 
+card_device=/dev/sdc
+label=log
+mount_point=/var/log
+wired_interface=eth0
+wireless_interface=wlan0
+
+root_partition="${card_device}1"
+big_partition="${card_device}2"
+
+
+main() {
+  target_host_name="${1}"
+  case "${target_host_name}" in
+    partybus)
+      image=~/images/banana_pi/armbian.m2.img
+      ip_address=192.168.11.64
+      ;;
+    files)
+      image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
+      ip_address=192.168.11.62
+      wired_interface=enx001e0636856d
+      ;;
+    spy)
+      image=~/images/orange_pi/Armbian_5.91_Orangepipcplus_Debian_buster_next_4.19.59.img
+      ip_address=192.168.11.67
+      label=motion
+      mount_point=/var/lib/motion
+      kick_wifi=yes
+      wired_interface=eth0_disabled
+      ;;
+    *)
+      fail "Unrecognized target host name:  '${target_host_name}'"
+      ;;
+  esac
+
+  get_root
+  keep_root &
+  sudo_loop_pid=$!
+  for m in /mnt/card /mnt/card2; do
+    if mountpoint "${m}" > /dev/null 2>&1; then
+      sudo umount "${m}" \
+        || fail "Failed to preparatively unmount /mnt/card."
+    fi
+  done
+  write_image
+  create_big_volume
+  sudo mount $root_partition /mnt/card \
+    || fail "Failed to mount root partition."
+  sudo mount $big_partition /mnt/card2 \
+    || fail "Failed to mount big partition."
+  configure_os
+  sudo umount /mnt/card2 \
+    || fail "Failed to unmount big partition."
+  sudo umount /mnt/card \
+    || fail "Failed to unmount root partition."
+  kill $sudo_loop_pid
+}
+
+
 output() {
   echo "OUTPUT:  ${1}"
 }
@@ -9,43 +68,6 @@ fail() {
   echo "ERROR:  ${1}" >&2
   exit 1
 }
-
-
-card_device=/dev/sdc
-label=log
-mount_point=/var/log
-wired_interface=eth0
-wireless_interface=wlan0
-
-
-#placeholder_user="root-at-${target_host_name}"
-root_partition="${card_device}1"
-big_partition="${card_device}2"
-
-
-target_host_name="${1}"
-case "${target_host_name}" in
-  partybus)
-    #image=~/images/banana_pi/armbian.m1.img
-    ip_address=192.168.11.64
-    ;;
-  files)
-    image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
-    ip_address=192.168.11.62
-    wired_interface=enx001e0636856d
-    ;;
-  spy)
-    image=~/images/orange_pi/Armbian_5.91_Orangepipcplus_Debian_buster_next_4.19.59.img
-    ip_address=192.168.11.67
-    label=motion
-    mount_point=/var/lib/motion
-    kick_wifi=yes
-    wired_interface=eth0_disabled
-    ;;
-  *)
-    fail "Unrecognized target host name:  '${target_host_name}'"
-    ;;
-esac
 
 
 get_root() {
@@ -65,7 +87,7 @@ write_image() {
   output "Writing image."
   # https://www.armbian.com/orange-pi-pc-plus/
   # https://dl.armbian.com/orangepipcplus/Debian_stretch_next.7z.torrent
-  dd if=$image bs=1M | pv | sudo dd bs=1M of=$card_device \
+  dd if="${image:-imageUnset}" bs=1M | pv | sudo dd bs=1M of="${card_device:-deviceUnset}" \
     || fail "Failed to write image."
   sudo parted $card_device resizepart 1 10240MB \
     || fail "Failed to resize root partition."
@@ -222,29 +244,5 @@ EOF
     || fail "Failed to sync contents of mount point to big partition."
 }
 
-main() {
-  get_root
-  keep_root &
-  sudo_loop_pid=$!
-  for m in /mnt/card /mnt/card2; do
-    if mountpoint "${m}" > /dev/null 2>&1; then
-      sudo umount "${m}" \
-        || fail "Failed to preparatively unmount /mnt/card."
-    fi
-  done
-  write_image
-  create_big_volume
-  sudo mount $root_partition /mnt/card \
-    || fail "Failed to mount root partition."
-  sudo mount $big_partition /mnt/card2 \
-    || fail "Failed to mount big partition."
-  configure_os
-  sudo umount /mnt/card2 \
-    || fail "Failed to unmount big partition."
-  sudo umount /mnt/card \
-    || fail "Failed to unmount root partition."
-  kill $sudo_loop_pid
-}
 
-
-time main
+time main "${@}"
