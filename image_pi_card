@@ -133,7 +133,10 @@ configure_os() {
     || fail "Failed to install authorized key."
 
   sudo sed -i 's/^root:.*$/root:*:0:0:root:\/root:\/bin\/bash/' /mnt/card/etc/passwd \
-    || fail "Failed to disable password authentication for root."
+    || fail "Failed to disable password authentication for pi."
+
+  sudo sed -i 's/^pi:.*$/pi:*:18409:0:99999:7:::/' /mnt/card/etc/shadow \
+    || fail "Failed to delete password hash for pi."
 
   sudo sed -i 's/^pi:.*$/pi:*:1000:1000:,,,:\/home\/pi:\/bin\/bash/' /mnt/card/etc/passwd \
     || fail "Failed to disable password authentication for pi."
@@ -153,15 +156,24 @@ configure_os() {
     /mnt/card/etc/profile.d/armbian-check-first-login.sh \
     /mnt/card/etc/ssh/ssh_host_*_key* \
     /mnt/card/etc/systemd/network/99-default.link \
+    /mnt/card/etc/systemd/system/default.target.wants/avahi-daemon.service \
+    /mnt/card/etc/systemd/system/default.target.wants/dhcpcd.service \
+    /mnt/card/etc/systemd/system/default.target.wants/nfs-client.target \
+    /mnt/card/etc/systemd/system/default.target.wants/raspberrypi-net-mods.service \
+    /mnt/card/etc/systemd/system/default.target.wants/regenerate_ssh_host_keys.service \
+    /mnt/card/etc/systemd/system/default.target.wants/remote-fs.target \
     /mnt/card/etc/systemd/system/default.target.wants/ssh.service \
+    /mnt/card/etc/systemd/system/default.target.wants/triggerhappy.service \
     /mnt/card/etc/systemd/system/multi-user.target.wants/NetworkManager.service \
     /mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service \
     /mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service \
     /mnt/card/lib/systemd/system/NetworkManager.service \
+    /mnt/card/lib/systemd/system/apply_noobs_os_config.service \
     /mnt/card/lib/systemd/system/armbian-firstrun-config.service \
     /mnt/card/lib/systemd/system/armbian-firstrun.service \
     /mnt/card/lib/systemd/system/armbian-resize-filesystem.service \
     /mnt/card/lib/systemd/system/dhcpcd.service \
+    /mnt/card/lib/systemd/system/raspberrypi-net-mods.service \
     /mnt/card/lib/systemd/system/regenerate_ssh_host_keys.service \
     /mnt/card/usr/bin/raspi-config \
     /mnt/card/usr/lib/armbian/armbian-firstrun \
@@ -176,10 +188,12 @@ configure_os() {
     /mnt/card/etc/init.d/dhcpcd \
     /mnt/card/etc/systemd/network/99-default.link \
     /mnt/card/lib/systemd/system/NetworkManager.service \
+    /mnt/card/lib/systemd/system/apply_noobs_os_config.service \
     /mnt/card/lib/systemd/system/armbian-firstrun-config.service \
     /mnt/card/lib/systemd/system/armbian-firstrun.service \
     /mnt/card/lib/systemd/system/armbian-resize-filesystem.service \
     /mnt/card/lib/systemd/system/dhcpcd.service \
+    /mnt/card/lib/systemd/system/raspberrypi-net-mods.service \
     /mnt/card/lib/systemd/system/regenerate_ssh_host_keys.service \
     /mnt/card/usr/lib/armbian/armbian-firstrun \
     /mnt/card/usr/lib/armbian/armbian-firstrun-config \
