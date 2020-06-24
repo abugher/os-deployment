@@ -5,6 +5,7 @@ label=log
 mount_point=/var/log
 wired_interface=eth0
 wireless_interface=wlan0
+root_partition_index=1
 
 
 main() {
@@ -12,22 +13,21 @@ main() {
   case "${target_host_name}" in
     partybus)
       image=
-      root_partition_index=2
       ip_address=192.168.11.64
       ;;
     files)
       image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
-      root_partition_index=1
       ip_address=192.168.11.62
       wired_interface=enx001e0636856d
       ;;
     spy)
       image=~/images/raspberry_pi/raspios.img
-      root_partition_index=1
+      root_partition_index=2
       ip_address=192.168.11.67
       label=motion
       mount_point=/var/lib/motion
       kick_wifi=yes
+      #wireless_interface=wlan0_disabled
       wired_interface=eth0_disabled
       ;;
     *)
@@ -135,20 +135,20 @@ configure_os() {
   sudo sed -i 's/^root:.*$/root:*:0:0:root:\/root:\/bin\/bash/' /mnt/card/etc/passwd \
     || fail "Failed to disable password authentication for root."
 
+  sudo sed -i 's/^pi:.*$/pi:*:1000:1000:,,,:\/home\/pi:\/bin\/bash/' /mnt/card/etc/passwd \
+    || fail "Failed to disable password authentication for pi."
+
   for dir in \
-    /mnt/card/etc/profile.d \
-    /mnt/card/etc/ssh \
-    /mnt/card/etc/systemd/network \
-    /mnt/card/etc/systemd/system/default.target.wants \
-    /mnt/card/etc/systemd/system/multi-user.target.wants \
-    /mnt/card/lib/systemd/system \
-    /mnt/card/usr/lib/armbian \
-    /mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants \
+    /mnt/card/etc/systemd/network/ \
+    /mnt/card/lib/systemd/system/ \
+    /mnt/card/usr/bin/ \
+    /mnt/card/usr/lib/armbian/ \
   ; do
     sudo mkdir -p "${dir}"
   done
 
   for file in \
+    /mnt/card/etc/init.d/dhcpcd \
     /mnt/card/etc/profile.d/armbian-check-first-login-reboot.sh \
     /mnt/card/etc/profile.d/armbian-check-first-login.sh \
     /mnt/card/etc/ssh/ssh_host_*_key* \
@@ -161,6 +161,9 @@ configure_os() {
     /mnt/card/lib/systemd/system/armbian-firstrun-config.service \
     /mnt/card/lib/systemd/system/armbian-firstrun.service \
     /mnt/card/lib/systemd/system/armbian-resize-filesystem.service \
+    /mnt/card/lib/systemd/system/dhcpcd.service \
+    /mnt/card/lib/systemd/system/regenerate_ssh_host_keys.service \
+    /mnt/card/usr/bin/raspi-config \
     /mnt/card/usr/lib/armbian/armbian-firstrun \
     /mnt/card/usr/lib/armbian/armbian-firstrun-config \
     /mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/NetworkManager.service \
@@ -170,13 +173,17 @@ configure_os() {
   done
 
   for file in \
+    /mnt/card/etc/init.d/dhcpcd \
     /mnt/card/etc/systemd/network/99-default.link \
+    /mnt/card/lib/systemd/system/NetworkManager.service \
     /mnt/card/lib/systemd/system/armbian-firstrun-config.service \
     /mnt/card/lib/systemd/system/armbian-firstrun.service \
     /mnt/card/lib/systemd/system/armbian-resize-filesystem.service \
-    /mnt/card/lib/systemd/system/NetworkManager.service \
-    /mnt/card/usr/lib/armbian/armbian-firstrun-config \
+    /mnt/card/lib/systemd/system/dhcpcd.service \
+    /mnt/card/lib/systemd/system/regenerate_ssh_host_keys.service \
     /mnt/card/usr/lib/armbian/armbian-firstrun \
+    /mnt/card/usr/lib/armbian/armbian-firstrun-config \
+    /mnt/card/usr/local/bin/raspi-config \
   ; do
     sudo ln -s /dev/null $file \
       || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
@@ -243,16 +250,22 @@ EOF
   cat ~/control_center/ansible/inventory/hosts/${target_host_name}/files/ssh_keys/ssh_host_rsa_key.pub | sudo tee /mnt/card/etc/ssh/ssh_host_rsa_key.pub \
     || fail "Failed to write SSH host key (public)."
 
-  if test "yes" = "${kick_wifi}"; then
   sudo tee /mnt/card/etc/rc.local << EOF
 #!/bin/sh -e
+rfkill block bluetooth uwb wimax wwan gps fm nfc
+rfkill unblock wlan
+EOF
+  if test "yes" = "${kick_wifi}"; then
+    sudo tee -a /mnt/card/etc/rc.local << EOF
 ifup wlan0
-exit 0
 EOF
     if ! test 0 == "${?}"; then
       fail "Failed to write:  /etc/rc.local"
     fi
   fi
+  sudo tee -a /mnt/card/etc/rc.local << EOF
+exit 0
+EOF
 
   sudo mkdir -p "/mnt/card${mount_point}/" \
     || fail "Failed to create mount point."
