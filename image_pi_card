@@ -12,8 +12,9 @@ main() {
   target_host_name="${1}"
   case "${target_host_name}" in
     partybus)
-      image=
+      image=~/images/banana_pi/armbian.m2.img
       ip_address=192.168.11.64
+      wireless_interface=wlan0_disabled
       ;;
     files)
       image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
