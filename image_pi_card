@@ -11,11 +11,6 @@ root_partition_index=1
 main() {
   target_host_name="${1}"
   case "${target_host_name}" in
-    partybus)
-      image=~/images/banana_pi/armbian.m2.img
-      ip_address=192.168.11.64
-      wireless_interface=wlan0_disabled
-      ;;
     files)
       image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
       ip_address=192.168.11.62
@@ -30,6 +25,19 @@ main() {
       kick_wifi=yes
       #wireless_interface=wlan0_disabled
       wired_interface=eth0_disabled
+      ;;
+    partybus)
+      image=~/images/banana_pi/armbian.m2.img
+      ip_address=192.168.11.64
+      wireless_interface=wlan0_disabled
+      ;;
+    catcher)
+      debug=yes
+      image=~/images/orange_pi/armbian.img
+      ip_address=192.168.11.74
+      wired_interface=eth0_disabled
+      #wireless_interface=wlan0_disabled
+      kick_wifi=yes
       ;;
     *)
       fail "Unrecognized target host name:  '${target_host_name}'"
@@ -124,9 +132,11 @@ configure_os() {
   echo "LABEL=${label} ${mount_point} f2fs defaults,noatime,nodiratime 0 2" | sudo tee -a /mnt/card/etc/fstab \
     || fail "Failed to write fstab."
 
-  # This is for debugging.  log2ram is probably good for sd card life.
-  #sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
-  #  || fail "Failed to disabled log2ram."
+  if test "yes" = $debug; then
+    # This is for debugging.  log2ram is probably good for sd card life.
+    sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
+      || fail "Failed to disabled log2ram."
+  fi
 
   sudo mkdir -p /mnt/card/root/.ssh \
     || fail "Failed to prepare dot ssh directory."
@@ -266,13 +276,31 @@ EOF
     || fail "Failed to write SSH host key (public)."
 
   sudo tee /mnt/card/etc/rc.local << EOF
-#!/bin/sh -e
+#!/bin/sh
 rfkill block bluetooth uwb wimax wwan gps fm nfc
 rfkill unblock wlan
 EOF
   if test "yes" = "${kick_wifi}"; then
+    sudo touch /mnt/card/usr/local/bin/kick_wifi \
+      || fail "Failed to touch kick_wifi script."
+    sudo chmod 0755 /mnt/card/usr/local/bin/kick_wifi \
+      || fail "Failed to chmod 0755 kick_wifi script."
+    sudo tee -a /mnt/card/usr/local/bin/kick_wifi << EOF
+#!/bin/sh
+> /var/log/kick_wifi.log
+sync
+sleep 5
+ip addr >> /var/log/kick_wifi.log 2>&1
+date >> /var/log/kick_wifi.log 2>&1
+ifup wlan0 >> /var/log/kick_wifi.log 2>&1
+date >> /var/log/kick_wifi.log 2>&1
+ip addr >> /var/log/kick_wifi.log 2>&1
+iwlist wlan0 scan >> /var/log/kick_wifi.log 2>&1
+uptime >> /var/log/kick_wifi.log 2>&1
+sync
+EOF
     sudo tee -a /mnt/card/etc/rc.local << EOF
-ifup wlan0
+/usr/local/bin/kick_wifi
 EOF
     if ! test 0 == "${?}"; then
       fail "Failed to write:  /etc/rc.local"
