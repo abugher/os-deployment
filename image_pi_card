@@ -1,7 +1,6 @@
 #!/bin/bash
 
-#card_device=/dev/sdc
-card_device=/dev/sdd
+card_device=/dev/sdc
 label=log
 mount_point=/var/log
 wired_interface=eth0
@@ -10,93 +9,77 @@ root_partition_index=1
 big_partition_index=2
 
 
+target_host_name="${1}"
+case "${target_host_name}" in
+  files)
+    image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
+    ip_address=192.168.11.62
+    wired_interface=enx001e0636856d
+    ;;
+  spy)
+    image=~/images/raspberry_pi/raspios.img
+    boot_partition_index=1
+    root_partition_index=2
+    big_partition_index=3
+    ip_address=192.168.11.67
+    label=motion
+    mount_point=/var/lib/motion
+    kick_wifi=yes
+    #wireless_interface=wlan0_disabled
+    wired_interface=eth0_disabled
+    ;;
+  workstation)
+    image=~/images/raspberry_pi/raspios.img
+    boot_partition_index=1
+    root_partition_index=2
+    big_partition_index=3
+    ip_address=192.168.11.75
+    label=home
+    mount_point=/home
+    kick_wifi=yes
+    #wireless_interface=wlan0_disabled
+    wired_interface=eth0_disabled
+    ;;
+  partybus)
+    image=~/images/banana_pi/armbian.m2.img
+    ip_address=192.168.11.64
+    wired_interface=eth0_disabled
+    #wireless_interface=wlan0_disabled
+    kick_wifi=yes
+    ;;
+  catcher)
+    #debug=yes
+    image=~/images/orange_pi/armbian.img
+    ip_address=192.168.11.74
+    wired_interface=eth0_disabled
+    #wireless_interface=wlan0_disabled
+    kick_wifi=yes
+    ;;
+  *)
+    fail "Unrecognized target host name:  '${target_host_name}'"
+    ;;
+esac
+
+root_partition="${card_device}${root_partition_index}"
+if test 'set' = "${boot_partition_index:+set}"; then
+  boot_partition="${card_device}${boot_partition_index}"
+fi
+big_partition="${card_device}${big_partition_index}"
+
+
 main() {
-  target_host_name="${1}"
-  case "${target_host_name}" in
-    files)
-      image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
-      ip_address=192.168.11.62
-      wired_interface=enx001e0636856d
-      ;;
-    spy)
-      image=~/images/raspberry_pi/raspios.img
-      boot_partition_index=1
-      root_partition_index=2
-      big_partition_index=3
-      ip_address=192.168.11.67
-      label=motion
-      mount_point=/var/lib/motion
-      kick_wifi=yes
-      #wireless_interface=wlan0_disabled
-      wired_interface=eth0_disabled
-      ;;
-    workstation)
-      image=~/images/raspberry_pi/raspios.img
-      boot_partition_index=1
-      root_partition_index=2
-      big_partition_index=3
-      ip_address=192.168.11.75
-      label=home
-      mount_point=/home
-      kick_wifi=yes
-      #wireless_interface=wlan0_disabled
-      wired_interface=eth0_disabled
-      ;;
-    partybus)
-      image=~/images/banana_pi/armbian.m2.img
-      ip_address=192.168.11.64
-      wired_interface=eth0_disabled
-      #wireless_interface=wlan0_disabled
-      kick_wifi=yes
-      ;;
-    catcher)
-      #debug=yes
-      image=~/images/orange_pi/armbian.img
-      ip_address=192.168.11.74
-      wired_interface=eth0_disabled
-      #wireless_interface=wlan0_disabled
-      kick_wifi=yes
-      ;;
-    *)
-      fail "Unrecognized target host name:  '${target_host_name}'"
-      ;;
-  esac
-
-  root_partition="${card_device}${root_partition_index}"
-  if test 'set' = "${boot_partition_index:+set}"; then
-    boot_partition="${card_device}${boot_partition_index}"
-  fi
-  big_partition="${card_device}${big_partition_index}"
-
   get_root
   keep_root &
   sudo_loop_pid=$!
-  for m in /mnt/card/boot /mnt/card /mnt/card2; do
-    if mountpoint "${m}" > /dev/null 2>&1; then
-      sudo umount "${m}" \
-        || fail "Failed to preparatively unmount /mnt/card."
-    fi
-  done
+  unmount_prep
   write_image
   create_big_volume
-  sudo mount $root_partition /mnt/card \
-    || fail "Failed to mount root partition."
-  sudo mount $big_partition /mnt/card2 \
-    || fail "Failed to mount big partition."
-  if test 'set' = "${boot_partition:+set}"; then
-    sudo mkdir -p /mnt/card/boot
-    sudo mount $boot_partition /mnt/card/boot \
-      || fail "Failed to mount boot partition."
-  fi
+  mount_root
+  sync_big_volume 
+  mount_nonroot
   configure_os
-  if test 'set' = "${boot_partition:+set}"; then
-    sudo umount /mnt/card/boot \
-      || fail "Failed to unmount boot partition."
-  fi
-  sudo umount /mnt/card2 \
-    || fail "Failed to unmount big partition."
-  sudo umount /mnt/card \
-    || fail "Failed to unmount root partition."
+  unmount_nonroot
+  unmount_root
   kill $sudo_loop_pid
 }
 
@@ -139,6 +122,69 @@ write_image() {
     || fail "Failed to resize root filesystem."
   sudo tune2fs -i 0 -c 0 $root_partition \
     || fail "Failed to tune root filesystem."
+}
+
+
+function unmount_prep {
+  for m in /mnt/card/boot /mnt/card"${mount_point}" /mnt/card /mnt/card2; do
+    if mountpoint "${m}" > /dev/null 2>&1; then
+      sudo umount "${m}" \
+        || fail "Failed to preparatively unmount:  ${m}"
+    fi
+  done
+}
+
+
+function mount_nonroot {
+  if test 'set' = "${boot_partition:+set}"; then
+    sudo mkdir -p /mnt/card/boot
+    sudo mount $boot_partition /mnt/card/boot \
+      || fail "Failed to mount boot partition."
+  fi
+
+  sudo mount $big_partition /mnt/card"${mount_point}" \
+    || fail "Failed to mount big partition."
+}
+
+
+function unmount_nonroot {
+  sudo umount /mnt/card"${mount_point}" \
+    || fail "Failed to unmount big partition."
+
+  if test 'set' = "${boot_partition:+set}"; then
+    sudo umount /mnt/card/boot \
+      || fail "Failed to unmount boot partition."
+  fi
+}
+
+
+function mount_root {
+  sudo mount $root_partition /mnt/card \
+    || fail "Failed to mount root partition."
+}
+
+
+function unmount_root {
+  sudo umount /mnt/card \
+    || fail "Failed to unmount root partition."
+}
+
+
+function sync_big_volume {
+  sudo mount $big_partition /mnt/card2 \
+    || fail "Failed to mount big partition to alternative mount point."
+  sudo mkdir -p "/mnt/card${mount_point}/" \
+    || fail "Failed to create mount point."
+  sudo rsync -a "/mnt/card${mount_point}/" /mnt/card2/ \
+    || fail "Failed to sync contents of mount point to big partition."
+  for f in $(ls -a "/mnt/card${mount_point}/"); do
+    if ! test '.' = "${f}" && ! test '..' = "${f}"; then
+      sudo rm -rf "/mnt/card${mount_point}/${f}" \
+        || fail "Failed to remove contents of mount point."
+    fi
+  done
+  sudo umount /mnt/card2/ \
+    || fail "Failed to unmount big partition from alternate mount point."
 }
 
 
@@ -192,10 +238,8 @@ configure_os() {
   done
 
   for file in \
-    /etc/rc3.d/S01resizefs_once \
-    /etc/init.d/resizefs_once \
-    /mnt/card/boot/cmdline.txt \
-    /mnt/card/etc/init.d/dhcpcd \
+    /etc/rc3.d/S01resizefs_once \ /etc/init.d/resizefs_once \
+    /mnt/card/boot/cmdline.txt \ /mnt/card/etc/init.d/dhcpcd \
     /mnt/card/etc/profile.d/armbian-check-first-login-reboot.sh \
     /mnt/card/etc/profile.d/armbian-check-first-login.sh \
     /mnt/card/etc/ssh/ssh_host_*_key* \
@@ -342,17 +386,6 @@ EOF
   sudo tee -a /mnt/card/etc/rc.local << EOF
 exit 0
 EOF
-
-  for f in $(ls -a "/mnt/card/${mount_point}/"); do
-    if ! test '.' = "${f}" && ! test '..' = "${f}"; then
-      sudo rm -rf "/mnt/card/${mount_point}/${f}" \
-        || fail "Failed to remove contents of mount point."
-    fi
-  done
-  sudo mkdir -p "/mnt/card${mount_point}/" \
-    || fail "Failed to create mount point."
-  sudo rsync -a "/mnt/card${mount_point}/" /mnt/card2/ \
-    || fail "Failed to sync contents of mount point to big partition."
 }
 
 
