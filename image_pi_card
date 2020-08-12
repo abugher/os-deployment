@@ -241,10 +241,14 @@ function configure_os() {
     || fail "Failed to disable password authentication for pi."
 
   for dir in \
+    /mnt/card/etc/init.d/ \
     /mnt/card/etc/systemd/network/ \
+    /mnt/card/etc/systemd/system/default.target.wants/ \
+    /mnt/card/etc/systemd/system/multi-user.target.wants/ \
     /mnt/card/lib/systemd/system/ \
     /mnt/card/usr/bin/ \
     /mnt/card/usr/lib/armbian/ \
+    /mnt/card/usr/local/bin/ \
   ; do
     sudo mkdir -p "${dir}"
   done
@@ -287,6 +291,15 @@ function configure_os() {
   for file in \
     /mnt/card/etc/init.d/dhcpcd \
     /mnt/card/etc/systemd/network/99-default.link \
+    /mnt/card/etc/systemd/system/default.target.wants/avahi-daemon.service \
+    /mnt/card/etc/systemd/system/default.target.wants/dhcpcd.service \
+    /mnt/card/etc/systemd/system/default.target.wants/nfs-client.target \
+    /mnt/card/etc/systemd/system/default.target.wants/raspberrypi-net-mods.service \
+    /mnt/card/etc/systemd/system/default.target.wants/regenerate_ssh_host_keys.service \
+    /mnt/card/etc/systemd/system/default.target.wants/remote-fs.target \
+    /mnt/card/etc/systemd/system/default.target.wants/triggerhappy.service \
+    /mnt/card/etc/systemd/system/multi-user.target.wants/NetworkManager.service \
+    /mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service \
     /mnt/card/lib/systemd/system/NetworkManager.service \
     /mnt/card/lib/systemd/system/apply_noobs_os_config.service \
     /mnt/card/lib/systemd/system/armbian-firstrun-config.service \
