@@ -1,73 +1,79 @@
 #!/bin/bash
 
-card_device=/dev/sdc
-label=log
-mount_point=/var/log
-wired_interface=eth0
-wireless_interface=wlan0
-root_partition_index=1
-big_partition_index=2
+
+function main() {
+  card_device=/dev/sdc
+  label=log
+  mount_point=/var/log
+  wired_interface=eth0
+  wireless_interface=wlan0
+  root_partition_index=1
+  big_partition_index=2
 
 
-target_host_name="${1}"
-case "${target_host_name}" in
-  files)
-    image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
-    ip_address=192.168.11.62
-    wired_interface=enx001e0636856d
-    ;;
-  spy)
-    image=~/images/raspberry_pi/raspios.img
-    boot_partition_index=1
-    root_partition_index=2
-    big_partition_index=3
-    ip_address=192.168.11.67
-    label=motion
-    mount_point=/var/lib/motion
-    kick_wifi=yes
-    #wireless_interface=wlan0_disabled
-    wired_interface=eth0_disabled
-    ;;
-  workstation)
-    image=~/images/raspberry_pi/raspios.img
-    boot_partition_index=1
-    root_partition_index=2
-    big_partition_index=3
-    ip_address=192.168.11.75
-    label=home
-    mount_point=/home
-    kick_wifi=yes
-    #wireless_interface=wlan0_disabled
-    wired_interface=eth0_disabled
-    ;;
-  partybus)
-    image=~/images/banana_pi/armbian.m2.img
-    ip_address=192.168.11.64
-    wired_interface=eth0_disabled
-    #wireless_interface=wlan0_disabled
-    kick_wifi=yes
-    ;;
-  catcher)
-    #debug=yes
-    image=~/images/orange_pi/armbian.img
-    ip_address=192.168.11.74
-    wired_interface=eth0_disabled
-    #wireless_interface=wlan0_disabled
-    kick_wifi=yes
-    ;;
-  *)
-    fail "Unrecognized target host name:  '${target_host_name}'"
-    ;;
-esac
+  target_host_name="${1}"
+  case "${target_host_name}" in
+    files)
+      image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
+      ip_address=192.168.11.62
+      wired_interface=enx001e0636856d
+      ;;
+    spy)
+      image=~/images/raspberry_pi/raspios.img
+      boot_partition_index=1
+      root_partition_index=2
+      big_partition_index=3
+      ip_address=192.168.11.67
+      label=motion
+      mount_point=/var/lib/motion
+      kick_wifi=yes
+      #wireless_interface=wlan0_disabled
+      wired_interface=eth0_disabled
+      ;;
+    workstation)
+      image=~/images/raspberry_pi/raspios.img
+      boot_partition_index=1
+      root_partition_index=2
+      big_partition_index=3
+      ip_address=192.168.11.75
+      label=home
+      mount_point=/home
+      kick_wifi=yes
+      wireless_interface=wlan1
+      #wireless_interface=wlan0_disabled
+      wired_interface=eth0_disabled
+      ;;
+    partybus)
+      image=~/images/banana_pi/armbian.m2.img
+      ip_address=192.168.11.64
+      wired_interface=eth0_disabled
+      #wireless_interface=wlan0_disabled
+      kick_wifi=yes
+      ;;
+    catcher)
+      #debug=yes
+      image=~/images/orange_pi/armbian.img
+      ip_address=192.168.11.74
+      wired_interface=eth0_disabled
+      #wireless_interface=wlan0_disabled
+      kick_wifi=yes
+      ;;
+    *)
+      fail "Unrecognized target host name:  '${target_host_name}'"
+      ;;
+  esac
 
-root_partition="${card_device}${root_partition_index}"
-if test 'set' = "${boot_partition_index:+set}"; then
-  boot_partition="${card_device}${boot_partition_index}"
-fi
-big_partition="${card_device}${big_partition_index}"
+  root_partition="${card_device}${root_partition_index}"
+  if test 'set' = "${boot_partition_index:+set}"; then
+    boot_partition="${card_device}${boot_partition_index}"
+  fi
+  big_partition="${card_device}${big_partition_index}"
+
+  actions
+}
 
 
-main() {
+function actions() {
   get_root
   keep_root &
   sudo_loop_pid=$!
@@ -84,31 +90,31 @@ main() {
 }
 
 
-output() {
+function output() {
   echo "OUTPUT:  ${1}"
 }
 
 
-fail() {
+function fail() {
   echo "ERROR:  ${1}" >&2
   exit 1
 }
 
 
-get_root() {
+function get_root() {
   output "We're going to need some root.  Authenticate for sudo."
   sudo -v || fail "Failed to get root."
 }
 
 
-keep_root() {
+function keep_root() {
   while sleep 60; do
     sudo -v
   done
 }
 
 
-write_image() {
+function write_image() {
   output "Writing image."
   # https://www.armbian.com/orange-pi-pc-plus/
   # https://dl.armbian.com/orangepipcplus/Debian_stretch_next.7z.torrent
@@ -125,7 +131,7 @@ write_image() {
 }
 
 
-function unmount_prep {
+function unmount_prep() {
   for m in /mnt/card/boot /mnt/card"${mount_point}" /mnt/card /mnt/card2; do
     if mountpoint "${m}" > /dev/null 2>&1; then
       sudo umount "${m}" \
@@ -135,7 +141,7 @@ function unmount_prep {
 }
 
 
-function mount_nonroot {
+function mount_nonroot() {
   if test 'set' = "${boot_partition:+set}"; then
     sudo mkdir -p /mnt/card/boot
     sudo mount $boot_partition /mnt/card/boot \
@@ -147,7 +153,7 @@ function mount_nonroot {
 }
 
 
-function unmount_nonroot {
+function unmount_nonroot() {
   sudo umount /mnt/card"${mount_point}" \
     || fail "Failed to unmount big partition."
 
@@ -158,19 +164,19 @@ function unmount_nonroot {
 }
 
 
-function mount_root {
+function mount_root() {
   sudo mount $root_partition /mnt/card \
     || fail "Failed to mount root partition."
 }
 
 
-function unmount_root {
+function unmount_root() {
   sudo umount /mnt/card \
     || fail "Failed to unmount root partition."
 }
 
 
-function sync_big_volume {
+function sync_big_volume() {
   sudo mount $big_partition /mnt/card2 \
     || fail "Failed to mount big partition to alternative mount point."
   sudo mkdir -p "/mnt/card${mount_point}/" \
@@ -188,7 +194,7 @@ function sync_big_volume {
 }
 
 
-create_big_volume() {
+function create_big_volume() {
   output "Getting storage parameters."
   parted_output=$(
     sudo parted $card_device unit s print free \
@@ -204,7 +210,7 @@ create_big_volume() {
 }
 
 
-configure_os() {
+function configure_os() {
   echo "LABEL=${label} ${mount_point} f2fs defaults,noatime,nodiratime 0 2" | sudo tee -a /mnt/card/etc/fstab \
     || fail "Failed to write fstab."
 
@@ -219,8 +225,14 @@ configure_os() {
   sudo tee /mnt/card/root/.ssh/authorized_keys < /home/aaron/.ssh/public \
     || fail "Failed to install authorized key."
 
-  sudo sed -i 's/^root:.*$/root:*:0:0:root:\/root:\/bin\/bash/' /mnt/card/etc/passwd \
-    || fail "Failed to disable password authentication for pi."
+  # Shadow line can contain slashes.
+  if sudo grep -q ^root /mnt/card/etc/shadow; then
+    sudo sed -i 's#^root:.*$#'"$(shadow_line root)"'#' /mnt/card/etc/shadow \
+      || fail "Failed to write password hash for root."
+  else
+    shadow_line root | sudo tee -a /mnt/card/etc/shadow \
+      || fail "Failed to write shadow line for root."
+  fi
 
   sudo sed -i 's/^pi:.*$/pi:*:18409:0:99999:7:::/' /mnt/card/etc/shadow \
     || fail "Failed to delete password hash for pi."
@@ -369,10 +381,10 @@ sync
 sleep 5
 ip addr >> /var/log/kick_wifi.log 2>&1
 date >> /var/log/kick_wifi.log 2>&1
-ifup wlan0 >> /var/log/kick_wifi.log 2>&1
+ifup ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
 date >> /var/log/kick_wifi.log 2>&1
 ip addr >> /var/log/kick_wifi.log 2>&1
-iwlist wlan0 scan >> /var/log/kick_wifi.log 2>&1
+iwlist ${wireless_interface} scan >> /var/log/kick_wifi.log 2>&1
 uptime >> /var/log/kick_wifi.log 2>&1
 sync
 EOF
@@ -386,6 +398,44 @@ EOF
   sudo tee -a /mnt/card/etc/rc.local << EOF
 exit 0
 EOF
+}
+
+
+function shadow_line() {
+  user="${1}"
+  valid_characters=()
+  for c in {a..z} {A..Z} {0..9} '/' '.'; do
+    valid_characters+=( "${c}" )
+  done
+  salt=
+  for i in {1..16}; do
+    i=$(( RANDOM % 64 ))
+    salt+="${valid_characters[i]}"
+  done
+  salt_length="$(wc -m <<< "${salt}")"
+  if ! test "${salt_length}" -eq 17; then
+    fail "Failed to generate a salt of appropriate length.  (${salt_length} / 16)"
+  fi
+  pass show "aaron/${target_host_name}/${user}" > /dev/null || fail "Failed to retrieve password from pass for:  '${user}'"
+  password_length="$(pass show "aaron/${target_host_name}/${user}" | wc -m)"
+  if ! test "${password_length}" -gt 4; then
+    fail "Failed to generate a password of appropriate length.  (${password_length} / 4)"
+  fi
+  hash="$(
+    pass show "aaron/${target_host_name}/${user}" \
+      | mkpasswd -S "${salt}" -m sha-512 --stdin \
+      || fail "mkpasswd returned:  ${?}"
+  )"
+  hash_length="$(wc -m <<< "${hash}")"
+  if ! test "${hash_length}" -eq 107; then
+    fail "Failed to generate a hash of appropriate length.  (${hash_length} / 107)"
+  fi
+  days_since_epoch="$(( $(date +%s) / 60 / 60 / 24 ))"
+  if ! test "${days_since_epoch}" -gt 1; then
+    fail "Failed to generate a reasonable number of days since the epoch.  (${days_since_epoch} / 1)"
+  fi
+
+  echo "${user}:${hash}:${days_since_epoch}::::::"
 }
 
 
