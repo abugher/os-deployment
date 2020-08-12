@@ -283,6 +283,7 @@ function configure_os() {
     /mnt/card/usr/lib/armbian/armbian-firstrun \
     /mnt/card/usr/lib/armbian/armbian-firstrun-config \
     /mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/NetworkManager.service \
+    /mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/regenerate_ssh_host_keys.service \
   ; do
     sudo rm -f $file \
       || fail "Failed to remove:  ${file}"
@@ -311,6 +312,7 @@ function configure_os() {
     /mnt/card/usr/lib/armbian/armbian-firstrun \
     /mnt/card/usr/lib/armbian/armbian-firstrun-config \
     /mnt/card/usr/local/bin/raspi-config \
+    /mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/regenerate_ssh_host_keys.service \
   ; do
     sudo ln -s /dev/null $file \
       || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
