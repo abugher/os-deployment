@@ -254,8 +254,10 @@ function configure_os() {
   done
 
   for file in \
-    /etc/rc3.d/S01resizefs_once \ /etc/init.d/resizefs_once \
-    /mnt/card/boot/cmdline.txt \ /mnt/card/etc/init.d/dhcpcd \
+    /etc/rc3.d/S01resizefs_once \
+    /etc/init.d/resizefs_once \
+    /mnt/card/boot/cmdline.txt \
+    /mnt/card/etc/init.d/dhcpcd \
     /mnt/card/etc/profile.d/armbian-check-first-login-reboot.sh \
     /mnt/card/etc/profile.d/armbian-check-first-login.sh \
     /mnt/card/etc/ssh/ssh_host_*_key* \
