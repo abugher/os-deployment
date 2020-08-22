@@ -3,13 +3,14 @@
 
 function main() {
   card_device=/dev/sdc
-  label=log
-  mount_point=/var/log
   wired_interface=eth0
   wireless_interface=wlan0
   root_partition_index=1
   big_partition_index=2
-  unset debug
+  use_big_partition=1
+  big_partition_label=log
+  big_partition_mount_point=/var/log
+  unset log_to_disk
 
 
   target_host_name="${1}"
@@ -20,14 +21,15 @@ function main() {
       wired_interface=enx001e0636856d
       ;;
     spy)
-      #debug=yes
+      #log_to_disk=yes
+      unset use_big_partition
+      unset big_partition_mount_point
+      unset big_partition_label
       image=~/images/raspberry_pi/raspios.img
       boot_partition_index=1
       root_partition_index=2
       big_partition_index=3
       ip_address=192.168.11.67
-      label=motion
-      mount_point=/var/lib/motion
       kick_wifi=yes
       #wireless_interface=wlan0_disabled
       wired_interface=eth0_disabled
@@ -38,8 +40,8 @@ function main() {
       root_partition_index=2
       big_partition_index=3
       ip_address=192.168.11.75
-      label=home
-      mount_point=/home
+      big_partition_label=home
+      big_partition_mount_point=/home
       kick_wifi=yes
       wireless_interface=wlan1
       #wireless_interface=wlan0_disabled
@@ -53,7 +55,7 @@ function main() {
       kick_wifi=yes
       ;;
     catcher)
-      #debug=yes
+      #log_to_disk=yes
       image=~/images/orange_pi/armbian.img
       ip_address=192.168.11.74
       wired_interface=eth0_disabled
@@ -81,9 +83,9 @@ function actions() {
   sudo_loop_pid=$!
   unmount_prep
   write_image
-  create_big_volume
+  create_big_partition
   mount_root
-  sync_big_volume 
+  sync_big_partition 
   mount_nonroot
   configure_os
   unmount_nonroot
@@ -134,7 +136,7 @@ function write_image() {
 
 
 function unmount_prep() {
-  for m in /mnt/card/boot /mnt/card"${mount_point}" /mnt/card /mnt/card2; do
+  for m in /mnt/card/boot /mnt/card"${big_partition_mount_point}" /mnt/card /mnt/card2; do
     if mountpoint "${m}" > /dev/null 2>&1; then
       sudo umount "${m}" \
         || fail "Failed to preparatively unmount:  ${m}"
@@ -150,14 +152,18 @@ function mount_nonroot() {
       || fail "Failed to mount boot partition."
   fi
 
-  sudo mount -t f2fs $big_partition /mnt/card"${mount_point}" \
-    || fail "Failed to mount big partition."
+  if test 'set' = "${use_big_partition:+set}"; then
+    sudo mount -t f2fs $big_partition /mnt/card"${big_partition_mount_point}" \
+      || fail "Failed to mount big partition."
+  fi
 }
 
 
 function unmount_nonroot() {
-  sudo umount /mnt/card"${mount_point}" \
-    || fail "Failed to unmount big partition."
+  if test 'set' = "${use_big_partition:+set}"; then
+    sudo umount /mnt/card"${big_partition_mount_point}" \
+      || fail "Failed to unmount big partition."
+  fi
 
   if test 'set' = "${boot_partition:+set}"; then
     sudo umount /mnt/card/boot \
@@ -178,16 +184,19 @@ function unmount_root() {
 }
 
 
-function sync_big_volume() {
+function sync_big_partition() {
+  if ! test 'set' = "${use_big_partition:+set}"; then
+    return 0
+  fi
   sudo mount -t f2fs $big_partition /mnt/card2 \
     || fail "Failed to mount big partition to alternative mount point."
-  sudo mkdir -p "/mnt/card${mount_point}/" \
+  sudo mkdir -p "/mnt/card${big_partition_mount_point}/" \
     || fail "Failed to create mount point."
-  sudo rsync -a "/mnt/card${mount_point}/" /mnt/card2/ \
+  sudo rsync -a "/mnt/card${big_partition_mount_point}/" /mnt/card2/ \
     || fail "Failed to sync contents of mount point to big partition."
-  for f in $(ls -a "/mnt/card${mount_point}/"); do
+  for f in $(ls -a "/mnt/card${big_partition_mount_point}/"); do
     if ! test '.' = "${f}" && ! test '..' = "${f}"; then
-      sudo rm -rf "/mnt/card${mount_point}/${f}" \
+      sudo rm -rf "/mnt/card${big_partition_mount_point}/${f}" \
         || fail "Failed to remove contents of mount point."
     fi
   done
@@ -196,31 +205,37 @@ function sync_big_volume() {
 }
 
 
-function create_big_volume() {
+function create_big_partition() {
   output "Getting storage parameters."
   parted_output=$(
     sudo parted $card_device unit s print free \
       || fail "Failed to analyze device:  '${card_device}'"
   )
-
   output "Writing big partition."
   sudo parted $card_device mkpart primary 10241MB -- -1MB \
     || fail "Failed to write big partition."
   output "Clobbering big partition."
   sudo dd if=/dev/zero of=$big_partition bs=$(( 1024 * 1024 )) count=1 \
     || fail "Failed to clobber big partition."
-  output "Writing big filesystem."
-  sudo mkfs.f2fs -f -l $label $big_partition \
-    || fail "Failed to write big filesystem."
+
+  if ! test 'set' = "${use_big_partition:+set}"; then
+    return 0
+  fi
+
+  output "Writing filesystem to big partition."
+  sudo mkfs.f2fs -f -l $big_partition_label $big_partition \
+    || fail "Failed to write filesystem to big partition."
 }
 
 
 function configure_os() {
-  echo "LABEL=${label} ${mount_point} f2fs defaults,noatime,nodiratime 0 2" | sudo tee -a /mnt/card/etc/fstab \
-    || fail "Failed to write fstab."
+  if test 'set' = "${use_big_partition:+set}"; then
+    echo "LABEL=${big_partition_label} ${big_partition_mount_point} f2fs defaults,noatime,nodiratime 0 2" | sudo tee -a /mnt/card/etc/fstab \
+      || fail "Failed to write fstab."
+  fi
 
-  if test "yes" = "${debug:+yes}"; then
-    # This is for debugging.  log2ram is probably good for sd card life.
+  if test "set" = "${log_to_disk:+set}"; then
+    # log2ram is probably good for sd card life.
     sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
       || fail "Failed to disabled log2ram."
   fi
