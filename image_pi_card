@@ -9,6 +9,7 @@ function main() {
   wireless_interface=wlan0
   root_partition_index=1
   big_partition_index=2
+  unset debug
 
 
   target_host_name="${1}"
@@ -19,6 +20,7 @@ function main() {
       wired_interface=enx001e0636856d
       ;;
     spy)
+      #debug=yes
       image=~/images/raspberry_pi/raspios.img
       boot_partition_index=1
       root_partition_index=2
@@ -148,7 +150,7 @@ function mount_nonroot() {
       || fail "Failed to mount boot partition."
   fi
 
-  sudo mount $big_partition /mnt/card"${mount_point}" \
+  sudo mount -t f2fs $big_partition /mnt/card"${mount_point}" \
     || fail "Failed to mount big partition."
 }
 
@@ -177,7 +179,7 @@ function unmount_root() {
 
 
 function sync_big_volume() {
-  sudo mount $big_partition /mnt/card2 \
+  sudo mount -t f2fs $big_partition /mnt/card2 \
     || fail "Failed to mount big partition to alternative mount point."
   sudo mkdir -p "/mnt/card${mount_point}/" \
     || fail "Failed to create mount point."
@@ -204,6 +206,9 @@ function create_big_volume() {
   output "Writing big partition."
   sudo parted $card_device mkpart primary 10241MB -- -1MB \
     || fail "Failed to write big partition."
+  output "Clobbering big partition."
+  sudo dd if=/dev/zero of=$big_partition bs=$(( 1024 * 1024 )) count=1 \
+    || fail "Failed to clobber big partition."
   output "Writing big filesystem."
   sudo mkfs.f2fs -f -l $label $big_partition \
     || fail "Failed to write big filesystem."
@@ -214,7 +219,7 @@ function configure_os() {
   echo "LABEL=${label} ${mount_point} f2fs defaults,noatime,nodiratime 0 2" | sudo tee -a /mnt/card/etc/fstab \
     || fail "Failed to write fstab."
 
-  if test "yes" = $debug; then
+  if test "yes" = "${debug:+yes}"; then
     # This is for debugging.  log2ram is probably good for sd card life.
     sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' /mnt/card/etc/default/armbian-ramlog \
       || fail "Failed to disabled log2ram."
