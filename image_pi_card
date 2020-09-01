@@ -5,6 +5,7 @@ function main() {
   card_device=/dev/sdc
   wired_interface=eth0
   wireless_interface=wlan0
+  active_interface="${wired_interface}"
   root_partition_index=1
   big_partition_index=2
   use_big_partition=1
@@ -19,6 +20,7 @@ function main() {
       image=~/images/odroid_hc1/Armbian_5.98_Odroidxu4_Debian_buster_default_4.14.141_minimal.img
       ip_address=192.168.11.62
       wired_interface=enx001e0636856d
+      active_interface="${wired_interface}"
       ;;
     spy)
       #log_to_disk=yes
@@ -31,8 +33,7 @@ function main() {
       big_partition_index=3
       ip_address=192.168.11.67
       kick_wifi=yes
-      #wireless_interface=wlan0_disabled
-      wired_interface=eth0_disabled
+      active_interface="${wireless_interface}"
       ;;
     workstation)
       image=~/images/raspberry_pi/raspios.img
@@ -42,24 +43,21 @@ function main() {
       ip_address=192.168.11.75
       big_partition_label=home
       big_partition_mount_point=/home
-      kick_wifi=yes
-      wireless_interface=wlan1
-      #wireless_interface=wlan0_disabled
-      wired_interface=eth0_disabled
+      # This might have just been working around my own bad ifupdown configuration.
+      #kick_wifi=yes
+      active_interface="${wireless_interface}"
       ;;
     partybus)
       image=~/images/banana_pi/armbian.m2.img
       ip_address=192.168.11.64
-      wired_interface=eth0_disabled
-      #wireless_interface=wlan0_disabled
+      active_interface="${wireless_interface}"
       kick_wifi=yes
       ;;
     catcher)
       #log_to_disk=yes
       image=~/images/orange_pi/armbian.img
       ip_address=192.168.11.74
-      wired_interface=eth0_disabled
-      #wireless_interface=wlan0_disabled
+      active_interface="${wireless_interface}"
       kick_wifi=yes
       ;;
     *)
@@ -366,7 +364,7 @@ EOF
   if ! test 0 == "${?}"; then
     fail "Failed to write:  interfaces.d/${wired_interface}" 
   fi
-  echo "auto ${wired_interface}" | sudo tee -a /mnt/card/etc/network/interfaces \
+  echo "auto ${active_interface}" | sudo tee -a /mnt/card/etc/network/interfaces \
     || fail "Failed to write to interfaces file."
 
   
