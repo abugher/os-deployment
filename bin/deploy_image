@@ -11,18 +11,16 @@ source vars/defaults \
   || fail "Failed to source:  vars/defaults"
 
 if test 'set' = "${1:+set}"; then
-  target_host_name="${1}"
+  host="${1}"
 else
   fail "No host name specified.\nUsage:\n  $0 <host_name>"
 fi
 
-for v in target_host_name hardware os; do
-  test 'set' = "${!v:+set}" \
-    || fail "\$${v} not set."
-  vars_file="vars/${v}/${!v}"
+for var in host hardware os; do
+  vars_file="vars/${var}/${!var}"
   if test -e "${vars_file}"; then
     source "${vars_file}" \
-      || fail "Unrecognized ${v}:  ${!v}"
+      || fail "Unrecognized ${var}:  ${!var}"
   fi
 done
 
@@ -31,6 +29,7 @@ test 'set' = "${image_path:+set}" \
 test 'set' = "${image_name:+set}" \
   || fail "\$image_name not set."
 image="${image_path}/${image_name}"
+output "Image:  ${image}"
 
 test 'set' = "${active_interface_type:+set}" \
   || fail "\$active_interface_type not set."
@@ -43,7 +42,7 @@ if test 'set' = "${boot_partition_index:+set}"; then
 fi
 big_partition="${card_device}${big_partition_index}"
 
-ansible_host_vars_file="../ansible/inventory/inventory.d/host_vars/${target_host_name}.yml"
+ansible_host_vars_file="../ansible/inventory/inventory.d/host_vars/${host}.yml"
 eval $(awk -F '[: ]*' '/ip_address/ {print $1"="$2}' "${ansible_host_vars_file}")
 test 'set' = "${ip_address:+set}" \
   || fail "\$ip_address not set."
