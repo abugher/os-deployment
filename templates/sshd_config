@@ -1,7 +1,3 @@
-#!/bin/bash
-
-read sshd_config << EOF
 AllowUsers root
 HostKey /etc/ssh/ssh_host_rsa_key
 UsePam no
-EOF

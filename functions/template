@@ -8,8 +8,8 @@ function template() {
   conf_name="${1}"
   target_path="${2}"
 
-  source templates/"${conf_name}" \
-    || fail "Failed to source:  templates/${conf_name}"
+  eval "${conf_name}"="\"$(cat templates/${conf_name})\""
+
   sudo tee /mnt/card"${target_path}" \
     <<< "${!conf_name}" \
     || fail "Failed to write:  ${target_path}" 

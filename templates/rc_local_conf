@@ -1,7 +1,3 @@
-#!/bin/bash
-
-read rc_local_conf << EOF
 #!/bin/sh
 rfkill block bluetooth uwb wimax wwan gps fm nfc
 rfkill unblock wlan
-EOF
