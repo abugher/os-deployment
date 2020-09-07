@@ -1,0 +1,50 @@
+#!/bin/bash
+
+
+function unmount_prep() {
+  for m in /mnt/card/boot /mnt/card"${big_partition_mount_point}" /mnt/card /mnt/card2; do
+    if mountpoint "${m}" > /dev/null 2>&1; then
+      sudo umount "${m}" \
+        || fail "Failed to preparatively unmount:  ${m}"
+    fi
+  done
+}
+
+
+function unmount_nonroot() {
+  if test 'set' = "${use_big_partition:+set}"; then
+    sudo umount /mnt/card"${big_partition_mount_point}" \
+      || fail "Failed to unmount big partition."
+  fi
+
+  if test 'set' = "${boot_partition:+set}"; then
+    sudo umount /mnt/card/boot \
+      || fail "Failed to unmount boot partition."
+  fi
+}
+
+
+function unmount_root() {
+  sudo umount /mnt/card \
+    || fail "Failed to unmount root partition."
+}
+
+
+function mount_nonroot() {
+  if test 'set' = "${boot_partition:+set}"; then
+    sudo mkdir -p /mnt/card/boot
+    sudo mount $boot_partition /mnt/card/boot \
+      || fail "Failed to mount boot partition."
+  fi
+
+  if test 'set' = "${use_big_partition:+set}"; then
+    sudo mount -t f2fs $big_partition /mnt/card"${big_partition_mount_point}" \
+      || fail "Failed to mount big partition."
+  fi
+}
+
+
+function mount_root() {
+  sudo mount $root_partition /mnt/card \
+    || fail "Failed to mount root partition."
+}

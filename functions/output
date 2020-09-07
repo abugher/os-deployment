@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+function output() {
+  echo "OUTPUT:  ${1}"
+}

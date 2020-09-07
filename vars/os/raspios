@@ -1,0 +1,6 @@
+#!/bin/bash
+
+image_name=raspios.img
+boot_partition_index=1
+root_partition_index=2
+big_partition_index=3

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+
+function template() {
+  test 2 = "${#}" \
+    || fail "template:  Wrong number of arguments; expected 2, recieved:  ${#}"
+
+  conf_name="${1}"
+  target_path="${2}"
+
+  source templates/"${conf_name}" \
+    || fail "Failed to source:  templates/${conf_name}"
+  sudo tee /mnt/card"${target_path}" \
+    <<< "${!conf_name}" \
+    || fail "Failed to write:  ${target_path}" 
+}

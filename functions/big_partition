@@ -1,0 +1,45 @@
+#!/bin/bash
+
+
+function create_big_partition() {
+  output "Getting storage parameters."
+  parted_output=$(
+    sudo parted $card_device unit s print free \
+      || fail "Failed to analyze device:  '${card_device}'"
+  )
+  output "Writing big partition."
+  sudo parted $card_device mkpart primary 10241MB -- -1MB \
+    || fail "Failed to write big partition."
+  output "Clobbering big partition."
+  sudo dd if=/dev/zero of=$big_partition bs=$(( 1024 * 1024 )) count=1 \
+    || fail "Failed to clobber big partition."
+
+  if ! test 'set' = "${use_big_partition:+set}"; then
+    return 0
+  fi
+
+  output "Writing filesystem to big partition."
+  sudo mkfs.f2fs -f -l $big_partition_label $big_partition \
+    || fail "Failed to write filesystem to big partition."
+}
+
+
+function sync_big_partition() {
+  if ! test 'set' = "${use_big_partition:+set}"; then
+    return 0
+  fi
+  sudo mount -t f2fs $big_partition /mnt/card2 \
+    || fail "Failed to mount big partition to alternative mount point."
+  sudo mkdir -p "/mnt/card${big_partition_mount_point}/" \
+    || fail "Failed to create mount point."
+  sudo rsync -a "/mnt/card${big_partition_mount_point}/" /mnt/card2/ \
+    || fail "Failed to sync contents of mount point to big partition."
+  for f in $(ls -a "/mnt/card${big_partition_mount_point}/"); do
+    if ! test '.' = "${f}" && ! test '..' = "${f}"; then
+      sudo rm -rf "/mnt/card${big_partition_mount_point}/${f}" \
+        || fail "Failed to remove contents of mount point."
+    fi
+  done
+  sudo umount /mnt/card2/ \
+    || fail "Failed to unmount big partition from alternate mount point."
+}

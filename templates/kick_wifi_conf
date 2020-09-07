@@ -1,0 +1,16 @@
+#!/bin/bash
+
+read kick_wifi_conf << EOF
+#!/bin/sh
+> /var/log/kick_wifi.log
+sync
+sleep 5
+ip addr >> /var/log/kick_wifi.log 2>&1
+date >> /var/log/kick_wifi.log 2>&1
+ifup ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
+date >> /var/log/kick_wifi.log 2>&1
+ip addr >> /var/log/kick_wifi.log 2>&1
+iwlist ${wireless_interface} scan >> /var/log/kick_wifi.log 2>&1
+uptime >> /var/log/kick_wifi.log 2>&1
+sync
+EOF

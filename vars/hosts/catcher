@@ -1,0 +1,4 @@
+#!/bin/bash
+
+hardware=orange_pi
+os=armbian

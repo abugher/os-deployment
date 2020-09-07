@@ -1,0 +1,13 @@
+#!/bin/bash
+
+read wireless_interface_conf << EOF
+iface ${wireless_interface} inet static
+    wpa-essid           puppies
+    wpa-psk             $wpa_psk
+    address             $ip_address
+    netmask             255.255.255.0
+    gateway             192.168.11.1
+    dns-nameservers     192.168.11.54
+    dns-search          neuronpointer.net
+EOF
+

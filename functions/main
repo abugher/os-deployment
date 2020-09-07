@@ -1,0 +1,25 @@
+#!/bin/bash
+
+
+function main() {
+  get_root
+  keep_root &
+  keep_root_pid=$!
+
+  # account for a sloppy user
+  unmount_prep
+
+  write_image
+  create_big_partition
+
+  mount_root
+  sync_big_partition 
+  mount_nonroot
+
+  configure_os
+
+  unmount_nonroot
+  unmount_root
+
+  drop_root "${keep_root_pid}"
+}

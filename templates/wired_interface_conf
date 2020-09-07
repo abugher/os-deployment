@@ -1,0 +1,11 @@
+#!/bin/bash
+
+read wired_interface_conf << EOF
+iface ${wired_interface} inet static
+    address             $ip_address
+    netmask             255.255.255.0
+    gateway             192.168.11.1
+    dns-nameservers     192.168.11.54
+    dns-search          neuronpointer.net
+EOF
+

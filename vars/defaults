@@ -1,0 +1,90 @@
+#!/bin/bash
+
+hardware=raspberry_pi
+os=raspios
+card_device=/dev/sdc
+wired_interface=eth0
+wireless_interface=wlan0
+active_interface_type=wired
+unset boot_partition_index
+root_partition_index=1
+big_partition_index=2
+use_big_partition=1
+big_partition_label=log
+big_partition_mount_point=/var/log
+unset log_to_disk
+
+create_directories=(
+  '/etc/init.d/'
+  '/etc/systemd/network/'
+  '/etc/systemd/system/default.target.wants/'
+  '/etc/systemd/system/multi-user.target.wants/'
+  '/lib/systemd/system/'
+  '/usr/bin/'
+  '/usr/lib/armbian/'
+  '/usr/local/bin/'
+  '/etc/ssh/'
+  '/etc/systemd/system/default.target.wants'
+  '/root/.ssh'
+)
+
+remove_files=(
+  '/etc/rc3.d/S01resizefs_once'
+  '/etc/init.d/resizefs_once'
+  '/mnt/card/boot/cmdline.txt'
+  '/mnt/card/etc/init.d/dhcpcd'
+  '/mnt/card/etc/profile.d/armbian-check-first-login-reboot.sh'
+  '/mnt/card/etc/profile.d/armbian-check-first-login.sh'
+  '/mnt/card/etc/ssh/ssh_host_*_key*'
+  '/mnt/card/etc/systemd/network/99-default.link'
+  '/mnt/card/etc/systemd/system/default.target.wants/avahi-daemon.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/dhcpcd.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/nfs-client.target'
+  '/mnt/card/etc/systemd/system/default.target.wants/raspberrypi-net-mods.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/regenerate_ssh_host_keys.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/remote-fs.target'
+  '/mnt/card/etc/systemd/system/default.target.wants/ssh.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/triggerhappy.service'
+  '/mnt/card/etc/systemd/system/multi-user.target.wants/NetworkManager.service'
+  '/mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service'
+  '/mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service'
+  '/mnt/card/lib/systemd/system/NetworkManager.service'
+  '/mnt/card/lib/systemd/system/apply_noobs_os_config.service'
+  '/mnt/card/lib/systemd/system/armbian-firstrun-config.service'
+  '/mnt/card/lib/systemd/system/armbian-firstrun.service'
+  '/mnt/card/lib/systemd/system/armbian-resize-filesystem.service'
+  '/mnt/card/lib/systemd/system/dhcpcd.service'
+  '/mnt/card/lib/systemd/system/raspberrypi-net-mods.service'
+  '/mnt/card/lib/systemd/system/regenerate_ssh_host_keys.service'
+  '/mnt/card/usr/bin/raspi-config'
+  '/mnt/card/usr/lib/armbian/armbian-firstrun'
+  '/mnt/card/usr/lib/armbian/armbian-firstrun-config'
+  '/mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/NetworkManager.service'
+  '/mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/regenerate_ssh_host_keys.service'
+)
+
+null_link_files=(
+  '/mnt/card/etc/init.d/dhcpcd'
+  '/mnt/card/etc/systemd/network/99-default.link'
+  '/mnt/card/etc/systemd/system/default.target.wants/avahi-daemon.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/dhcpcd.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/nfs-client.target'
+  '/mnt/card/etc/systemd/system/default.target.wants/raspberrypi-net-mods.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/regenerate_ssh_host_keys.service'
+  '/mnt/card/etc/systemd/system/default.target.wants/remote-fs.target'
+  '/mnt/card/etc/systemd/system/default.target.wants/triggerhappy.service'
+  '/mnt/card/etc/systemd/system/multi-user.target.wants/NetworkManager.service'
+  '/mnt/card/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service'
+  '/mnt/card/lib/systemd/system/NetworkManager.service'
+  '/mnt/card/lib/systemd/system/apply_noobs_os_config.service'
+  '/mnt/card/lib/systemd/system/armbian-firstrun-config.service'
+  '/mnt/card/lib/systemd/system/armbian-firstrun.service'
+  '/mnt/card/lib/systemd/system/armbian-resize-filesystem.service'
+  '/mnt/card/lib/systemd/system/dhcpcd.service'
+  '/mnt/card/lib/systemd/system/raspberrypi-net-mods.service'
+  '/mnt/card/lib/systemd/system/regenerate_ssh_host_keys.service'
+  '/mnt/card/usr/lib/armbian/armbian-firstrun'
+  '/mnt/card/usr/lib/armbian/armbian-firstrun-config'
+  '/mnt/card/usr/local/bin/raspi-config'
+  '/mnt/card/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/regenerate_ssh_host_keys.service'
+)
