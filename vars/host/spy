@@ -5,3 +5,4 @@ os=raspios
 unset use_big_partition
 unset big_partition_mount_point
 unset big_partition_label
+active_interface_type=wireless
