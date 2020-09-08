@@ -1,4 +1,4 @@
 #!/bin/bash
 
-hardware=banana_pi_m2
+hardware=orange_pi
 os=armbian
