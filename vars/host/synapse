@@ -1,0 +1,7 @@
+#!/bin/bash
+
+hardware=raspberry_pi
+os=raspios
+big_partition_label=home
+big_partition_mount_point=/home
+card_device=/dev/sdb
