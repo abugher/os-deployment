@@ -1,3 +1,3 @@
-AllowUsers root
-HostKey /etc/ssh/ssh_host_rsa_key
-UsePam no
+AllowUsers                      root
+HostKey                         /etc/ssh/ssh_host_rsa_key
+Subsystem sftp                  internal-sftp

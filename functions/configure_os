@@ -28,7 +28,7 @@ function configure_os() {
   sudo sed -i 's/^pi:.*$/pi:*:18409:0:99999:7:::/' /mnt/card/etc/shadow \
     || fail "Failed to delete password hash for pi."
 
-  sudo sed -i 's/^pi:.*$/pi:*:1000:1000:,,,:\/home\/pi:\/bin\/bash/' /mnt/card/etc/passwd \
+  sudo sed -Ei 's/^pi:[^:]*:(.*)$/pi:*:\1\/home\/pi:\/bin\/bash/' /mnt/card/etc/passwd \
     || fail "Failed to disable password authentication for pi."
 
   for dir in "${create_directories[@]}"; do
