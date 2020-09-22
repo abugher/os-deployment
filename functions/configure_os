@@ -32,23 +32,29 @@ function configure_os() {
     || fail "Failed to disable password authentication for pi."
 
   for dir in "${create_directories[@]}"; do
-    sudo mkdir -p "/mnt/card${dir}"
+    sudo mkdir -p "/mnt/card/${dir}"
   done
 
   for file in "${remove_files[@]}"; do 
-    sudo rm -f $file \
+    sudo rm -f /mnt/card/$file \
       || fail "Failed to remove:  ${file}"
   done
 
   for file in "${null_link_files[@]}"; do
-    sudo ln -s /dev/null $file \
+    sudo ln -s /dev/null /mnt/card/$file \
       || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
   done
 
-  wpa_psk=$(pass show aaron/network/puppies/wpa_psk) \
+  wpa_psk=$(pass show aaron/network/"${network_name}"/wpa_psk) \
     || fail "Failed to read WPA PSK."
 
-  template wireless_interface_conf /etc/network/interfaces.d/"${wireless_interface}"
+  if test 'static' = $network_addressing; then
+    template wireless_interface_conf_static /etc/network/interfaces.d/"${wireless_interface}"
+  elif test 'dhcp' = $network_addressing; then
+    template wireless_interface_conf_dhcp /etc/network/interfaces.d/"${wireless_interface}"
+  else
+    fail "\$network_addressing not set or invalid.  (${network_addressing})"
+  fi
   template wired_interface_conf /etc/network/interfaces.d/"${wired_interface}"
 
   sudo tee -a /mnt/card/etc/network/interfaces \

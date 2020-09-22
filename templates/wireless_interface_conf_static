@@ -1,5 +1,5 @@
 iface ${wireless_interface} inet static
-    wpa-essid           puppies
+    wpa-essid           $network_name
     wpa-psk             $wpa_psk
     address             $ip_address
     netmask             255.255.255.0

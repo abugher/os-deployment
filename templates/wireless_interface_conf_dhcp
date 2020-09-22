@@ -1,0 +1,3 @@
+iface ${wireless_interface} inet dhcp
+    wpa-essid           $network_name
+    wpa-psk             $wpa_psk
