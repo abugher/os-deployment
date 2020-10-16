@@ -1,0 +1,154 @@
+#!/bin/bash
+# 
+# mkbs
+# MaKe BootStick
+# 
+# Create a bootable USB stick using debootstrap.  Target OS is Debian or very
+# similar.  (Developed on Devuan.)
+#
+# Usage:
+#   mkbs <device>
+
+
+function main() {
+  if ! grep . <<< "${1}"; then
+    fail 'Specify a device.'
+  fi
+
+  device="${1}"
+
+  sudo -v || fail "Failed to sudo."
+  pass show "aaron/bootstick/root" \
+    > /dev/null \
+    || fail "Failed to retrieve password from pass"
+
+  
+
+  sudo parted -s "${device}" mklabel gpt \
+    || fail "Failed to write partition table."
+  sudo parted -s "${device}" mkpart primary fat32 1MiB 513MiB \
+    || fail "Failed to create ESP."
+  sudo parted -s "${device}" set 1 esp on \
+    || fail "Failed to set esp flag."
+  sudo mkfs.vfat "${device}1" \
+    || fail "Failed to write FS to ESP."
+  sudo parted -s "${device}" mkpart primary ext4 513MiB 2GiB \
+    || fail "Failed to create root/boot partition."
+  sudo mkfs.ext4 -F -L bootstick "${device}"2 \
+    || fail "Failed to write FS to root/boot partition."
+  sudo tune2fs -i 0 -c 0 "${device}"2 \
+    || fail "Failed to tune FS parameters for root/boot partition."
+  if mountpoint /mnt/bootstick; then
+    fail '/mnt/bootstick is already mounted.'
+  fi
+  sudo mkdir -p /mnt/bootstick \
+    || fail "Failed to create mount point."
+  sudo mount "${device}"2 /mnt/bootstick \
+    || fail "Failed to mount root/boot partition."
+  mkdir -p "${HOME}"/tmp/debootstrap_cache \
+    || fail "Failed to create cache directory."
+  sudo debootstrap --cache-dir "${HOME}"/tmp/debootstrap_cache --arch=amd64 stable /mnt/bootstick/ \
+    || fail "Failed to write OS."
+  sudo mkdir -p /mnt/bootstick/boot/efi \
+    || fail "Failed to create ESP mount point."
+  sudo mount "${device}"1 /mnt/bootstick/boot/efi \
+    || fail "Failed to mount ESP."
+  sudo mount -t proc procfs /mnt/bootstick/proc \
+    || fail "Failed to mount proc."
+  sudo mount -t sysfs sysfs /mnt/bootstick/sys \
+    || fail "Failed to mount sys."
+  sudo mount -t devtmpfs udev /mnt/bootstick/dev \
+    || fail "Failed to mount dev."
+  sudo mount -t devpts devpts /mnt/bootstick/dev/pts \
+    || fail "Failed to mount dev/pts."
+  sudo tee /mnt/bootstick/etc/hostname <<< bootstick \
+    || fail "Failed to write hostname."
+  uuid=$(ls -l /dev/disk/by-uuid/ | awk '/..\/..\/sdb1/ {print $9}')
+  grep -q . <<< "${uuid}" \
+    || fail "Failed to determine ESP uuid."
+  sudo tee /mnt/bootstick/etc/fstab << EOF
+LABEL=bootstick / ext4 noatime 0 1
+UUID=$uuid /boot/efi vfat defaults 0 1
+EOF
+  if ! test 0 = "${?}"; then
+    fail "Failed to write fstab."
+  fi
+  sudo chroot /mnt/bootstick /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install linux-image-amd64 grub-efi' \
+    || fail "Failed to install kernel and bootloader packages."
+  #sed -i /mnt/bootstick/etc/lvm/lvm.conf '
+  #  s/^multipath_component_detection.*$/multipath_component_detection = 0/;
+  #  s/^md_component_detection.*$/md_component_detection = 0/;
+  #  s/^udev_sync.*$/udev_sync = 0/;
+  #  s/^udev_rules.*$/udev_rules = 0/;
+  #'
+  sudo chroot /mnt/bootstick update-grub \
+    || fail "Failed to update grub configuration."
+  sudo chroot /mnt/bootstick grub-install --removable --no-uefi-secure-boot --boot-directory /boot --efi-directory /boot/efi --recheck "${device}" \
+    || fail "Failed to install grub."
+  sudo sed -i 's/main$/main contrib non-free/' /mnt/bootstick/etc/apt/sources.list \
+    || fail "Failed to extend sources list." 
+  sudo chroot /mnt/bootstick /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y update' \
+    || fail "Failed to update apt cache."
+  sudo chroot /mnt/bootstick /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install wireless-tools wpasupplicant ifupdown firmware-linux-free firmware-linux-nonfree firmware-iwlwifi firmware-atheros firmware-realtek firmware-brcm80211 firmware-libertas firmware-ralink firmware-ti-connectivity firmware-zd1211' \
+    || fail "Failed to install network tools and firmware packages."
+  # firmware-ipw2x00 
+  #sudo chroot /mnt/bootstick /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install cryptsetup lvm2' \
+  #  || fail "Failed to install advanced partitioning tools."
+  sudo chroot /mnt/bootstick /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install vim' \
+    || fail "Failed to install vim."
+  sudo chroot /mnt/bootstick /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y purge nano' \
+    || fail "Failed to purge nano."
+  sudo sed -i 's#^root:.*$#'"$(shadow_line root)"'#' /mnt/bootstick/etc/shadow \
+    || fail "Failed to write root password hash."
+  sudo umount -R /mnt/bootstick \
+    || fail "Failed to unmount bootstick."
+}
+
+
+function fail() {
+  printf "%s\n" "${1}" 2>&1
+  exit 1
+}
+
+
+function shadow_line() {
+  user="${1}"
+  valid_characters=()
+  for c in {a..z} {A..Z} {0..9} '/' '.'; do
+    valid_characters+=( "${c}" )
+  done
+  salt=
+  for i in {1..16}; do
+    i=$(( RANDOM % 64 ))
+    salt+="${valid_characters[i]}"
+  done
+  salt_length="$(wc -m <<< "${salt}")"
+  if ! test "${salt_length}" -eq 17; then
+    fail "Failed to generate a salt of appropriate length.  ($((salt_length - 1)) / 16)"
+  fi
+  pass show "aaron/bootstick/root" \
+    > /dev/null \
+    || fail "Failed to retrieve password from pass"
+  password_length="$(pass show "aaron/bootstick/root" | wc -m)"
+  if ! test "${password_length}" -gt 4; then
+    fail "Failed to generate a password of appropriate length.  (${password_length} / 4)"
+  fi
+  hash="$(
+    pass show "aaron/bootstick/root" \
+      | mkpasswd -S "${salt}" -m sha-512 --stdin \
+      || fail "mkpasswd returned:  ${?}"
+  )"
+  hash_length="$(wc -m <<< "${hash}")"
+  if ! test "${hash_length}" -eq 107; then
+    fail "Failed to generate a hash of appropriate length.  ($((hash_length - 1)) / 106)"
+  fi
+  days_since_epoch="$(( $(date +%s) / 60 / 60 / 24 ))"
+  if ! test "${days_since_epoch}" -gt 1; then
+    fail "Failed to generate a reasonable number of days since the epoch.  (${days_since_epoch} / 1)"
+  fi
+
+  echo "${user}:${hash}:${days_since_epoch}::::::"
+}
+
+
+main "${@}"
