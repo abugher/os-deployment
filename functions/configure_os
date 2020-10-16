@@ -120,7 +120,7 @@ function shadow_line() {
   done
   salt_length="$(wc -m <<< "${salt}")"
   if ! test "${salt_length}" -eq 17; then
-    fail "Failed to generate a salt of appropriate length.  (${salt_length} / 16)"
+    fail "Failed to generate a salt of appropriate length.  ($(( salt_length - 1)) / 16)"
   fi
   pass show "aaron/${host}/${user}" \
     > /dev/null \
