@@ -136,7 +136,7 @@ function shadow_line() {
   )"
   hash_length="$(wc -m <<< "${hash}")"
   if ! test "${hash_length}" -eq 107; then
-    fail "Failed to generate a hash of appropriate length.  (${hash_length} / 107)"
+    fail "Failed to generate a hash of appropriate length.  ($((hash_length - 1)) / 106)"
   fi
   days_since_epoch="$(( $(date +%s) / 60 / 60 / 24 ))"
   if ! test "${days_since_epoch}" -gt 1; then
