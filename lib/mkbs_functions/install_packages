@@ -17,13 +17,6 @@ function install_networking_packages() {
 
 
 function install_storage_packages() {
-  #sed -i "${target_mount_point}"/etc/lvm/lvm.conf '
-  #  s/^multipath_component_detection.*$/multipath_component_detection = 0/;
-  #  s/^md_component_detection.*$/md_component_detection = 0/;
-  #  s/^udev_sync.*$/udev_sync = 0/;
-  #  s/^udev_rules.*$/udev_rules = 0/;
-  #'
-
   sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install cryptsetup lvm2' \
     || fail "Failed to install advanced partitioning tools."
 }

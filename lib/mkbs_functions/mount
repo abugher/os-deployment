@@ -6,13 +6,21 @@ function unmount_prep() {
     sudo umount -R "${target_mount_point}" \
       || fail "Failed to preparatively unmount mount points."
   fi
+  if test -e /dev/mapper/"${host}"-root; then
+    sudo vgchange -a n "${host}" \
+      || fail "Failed to preparatively deactivate volume group over LUKS."
+  fi
+  if test -e /dev/mapper/"${host}"_crypt; then
+    sudo cryptsetup close "${host}"_crypt \
+      || fail "Failed to preparatively close LUKS volume."
+  fi
 }
 
 
 function mount_partitions() {
   sudo mkdir -p "${target_mount_point}" \
     || fail "Failed to create target mount point."
-  sudo mount "${device}"3 "${target_mount_point}" \
+  sudo mount /dev/mapper/"${host}"-root "${target_mount_point}" \
     || fail "Failed to mount root/boot partition."
   sudo mkdir -p "${target_mount_point}"/boot \
     || fail "Failed to create boot mount point."
@@ -34,12 +42,19 @@ function mount_virtual_filesystems() {
     || fail "Failed to mount dev."
   sudo mount -t devpts devpts "${target_mount_point}"/dev/pts \
     || fail "Failed to mount dev/pts."
-  sudo tee "${target_mount_point}"/etc/hostname <<< bootstick \
-    || fail "Failed to write hostname."
+  sudo mkdir -p "${target_mount_point}"/run/udev \
+    || fail "Failed to create mount point for bind-mount:  /run/udev."
+  sudo mount --bind /run/udev "${target_mount_point}"/run/udev \
+    || fail "Failed to bind-mount:  /run/udev"
 }
 
 
 function unmount_all() {
   sudo umount -R "${target_mount_point}" \
-    || fail "Failed to unmount bootstick."
+    || fail "Failed to unmount ${host}."
+  sudo vgchange -a n "${host}" \
+    || fail "Failed to deactivate volume group over LUKS."
+  sudo cryptsetup close "${host}"_crypt \
+    || fail "Failed to close LUKS volume."
+
 }

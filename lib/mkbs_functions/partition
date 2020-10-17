@@ -30,7 +30,7 @@ function partition() {
     sleep .1
   done
   echo
-  sudo mkfs.ext4 -F -L bootstick_boot "${device}"2 \
+  sudo mkfs.ext4 -F -L "${host}"_boot "${device}"2 \
     || fail "Failed to write FS to boot partition."
   sudo tune2fs -i 0 -c 0 "${device}"2 \
     || fail "Failed to tune FS parameters for boot partition."
@@ -44,8 +44,27 @@ function partition() {
     sleep .1
   done
   echo
-  sudo mkfs.ext4 -F -L bootstick_root "${device}"3 \
+  # Are you sure you want to blow away this partition?  YES
+  {
+    pass show aaron/"${host}"/luks \
+      || fail "Failed to retrieve password for LUKS."
+  } \
+  | sudo cryptsetup luksFormat --key-file - "${device}"3 \
+    || fail "Failed to format for LUKS."
+  {
+    pass show aaron/"${host}"/luks \
+      || fail "Failed to retrieve password for LUKS."
+  } \
+  | sudo cryptsetup open --key-file - --type luks "${device}"3 "${host}"_crypt \
+    || fail "Failed to open LUKS volume."
+  sudo pvcreate /dev/mapper/"${host}"_crypt \
+    || fail "Failed to create LVM physical volume over LUKS."
+  sudo vgcreate "${host}" /dev/mapper/"${host}"_crypt \
+    || fail "Failed to create volume group over LUKS."
+  sudo lvcreate -l 100%FREE -n root "${host}" \
+    || fail "Failed to create logical volume for root."
+  sudo mkfs.ext4 -F -L "${host}"_root /dev/mapper/"${host}"-root \
     || fail "Failed to write FS to root partition."
-  sudo tune2fs -i 0 -c 0 "${device}"3 \
+  sudo tune2fs -i 0 -c 0 /dev/mapper/"${host}"-root \
     || fail "Failed to tune FS parameters for root partition."
 }

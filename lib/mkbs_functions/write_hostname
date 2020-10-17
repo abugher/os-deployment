@@ -1,0 +1,7 @@
+#!/bin/bash
+
+
+function write_hostname() {
+  sudo tee "${target_mount_point}"/etc/hostname <<< "${host}" \
+    || fail "Failed to write hostname."
+}

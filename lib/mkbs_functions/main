@@ -18,10 +18,11 @@ function main() {
   initialize_os
   mount_virtual_filesystems
   write_fstab
+  write_hostname
+  install_storage_packages
   make_bootable
   extend_sources
   install_networking_packages
-  #install_storage_packages
   write_root_password_hash
   fix_editor
 

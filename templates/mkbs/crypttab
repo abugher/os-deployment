@@ -1,0 +1,1 @@
+${host}_crypt ${device}3 none luks

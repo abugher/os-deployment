@@ -23,7 +23,7 @@ else
   fail 'Specify a device.'
 fi
 
-target_mount_point=/mnt/bootstick
 host=bootstick
+target_mount_point=/mnt/"${host}"
 
 time main "${@}"

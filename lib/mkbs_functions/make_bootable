@@ -8,4 +8,15 @@ function make_bootable() {
     || fail "Failed to update grub configuration."
   sudo chroot "${target_mount_point}" grub-install --removable --no-uefi-secure-boot --boot-directory /boot --efi-directory /boot/efi --recheck "${device}" \
     || fail "Failed to install grub."
+  template mkbs/crypttab /etc/crypttab
+  #sudo cp "${target_mount_point}"/etc/lvm/lvm.conf{,.bak}
+  #sudo sed -i "${target_mount_point}"/etc/lvm/lvm.conf '
+  #  s/^multipath_component_detection.*$/multipath_component_detection = 0/;
+  #  s/^md_component_detection.*$/md_component_detection = 0/;
+  #  s/^udev_sync.*$/udev_sync = 0/;
+  #  s/^udev_rules.*$/udev_rules = 0/;
+  #'
+  sudo chroot "${target_mount_point}" update-initramfs -u \
+    || fail "Failed to update initramfs."
+  #sudo mv "${target_mount_point}"/etc/lvm/lvm.conf{.bak,}
 }
