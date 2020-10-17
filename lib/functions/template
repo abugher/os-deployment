@@ -8,8 +8,8 @@ function template() {
   conf_name="${1}"
   target_path="${2}"
 
-  #eval "${conf_name}"="\"$(cat templates/${conf_name})\""
-  content="$(cat templates/${conf_name})"
+  # eval here allows use of variables inside the template file.
+  eval content="\"$(cat templates/${conf_name})\""
 
   sudo tee "${target_mount_point}""${target_path}" \
     <<< "${content}" \

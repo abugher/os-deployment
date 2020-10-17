@@ -1,2 +1,3 @@
-LABEL=bootstick / ext4 noatime 0 1
-UUID=${uuid} /boot/efi vfat defaults 0 1
+LABEL=bootstick_root    /               ext4    noatime         0 1
+LABEL=bootstick_boot    /boot           ext4    noatime         0 2
+UUID=${uuid}          /boot/efi       vfat    defaults        0 2

@@ -21,7 +21,7 @@ function partition() {
   sudo mkfs.vfat "${device}1" \
     || fail "Failed to write FS to ESP."
   sudo parted -s "${device}" mkpart primary ext4 513MiB 2GiB \
-    || fail "Failed to create root/boot partition."
+    || fail "Failed to create boot partition."
   for i in {0..99}; do
     if test -a "${device}"2; then
       break
@@ -30,10 +30,22 @@ function partition() {
     sleep .1
   done
   echo
-  sudo mkfs.ext4 -F -L bootstick "${device}"2 \
-    || fail "Failed to write FS to root/boot partition."
+  sudo mkfs.ext4 -F -L bootstick_boot "${device}"2 \
+    || fail "Failed to write FS to boot partition."
   sudo tune2fs -i 0 -c 0 "${device}"2 \
-    || fail "Failed to tune FS parameters for root/boot partition."
-  sudo mkdir -p "${target_mount_point}" \
-    || fail "Failed to create mount point."
+    || fail "Failed to tune FS parameters for boot partition."
+  sudo parted -s "${device}" mkpart primary ext4 2GiB 100% \
+    || fail "Failed to create root partition."
+  for i in {0..99}; do
+    if test -a "${device}"3; then
+      break
+    fi
+    echo -n .
+    sleep .1
+  done
+  echo
+  sudo mkfs.ext4 -F -L bootstick_root "${device}"3 \
+    || fail "Failed to write FS to root partition."
+  sudo tune2fs -i 0 -c 0 "${device}"3 \
+    || fail "Failed to tune FS parameters for root partition."
 }
