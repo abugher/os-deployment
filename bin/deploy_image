@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for lib in functions/*; do
+for lib in lib/functions/* lib/deploy_image_functions/*; do
   if ! source "${lib}"; then
     echo "ERROR:  Failed to source:  ${lib}" >&2
     exit 1
@@ -46,5 +46,6 @@ ansible_host_vars_file="../ansible/inventory/inventory.d/host_vars/${host}.yml"
 eval $(awk -F '[: ]*' '/ip_address/ {print $1"="$2}' "${ansible_host_vars_file}")
 test 'set' = "${ip_address:+set}" \
   || fail "\$ip_address not set."
+
 
 time main "${@}"

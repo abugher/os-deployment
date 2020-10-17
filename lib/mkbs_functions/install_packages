@@ -1,0 +1,37 @@
+#!/bin/bash
+
+
+function extend_sources() {
+  sudo sed -i 's/main$/main contrib non-free/' "${target_mount_point}"/etc/apt/sources.list \
+    || fail "Failed to extend sources list." 
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y update' \
+    || fail "Failed to update apt cache."
+}
+
+
+function install_networking_packages() {
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install wireless-tools wpasupplicant ifupdown firmware-linux-free firmware-linux-nonfree firmware-iwlwifi firmware-atheros firmware-realtek firmware-brcm80211 firmware-libertas firmware-ralink firmware-ti-connectivity firmware-zd1211' \
+    || fail "Failed to install network tools and firmware packages."
+  # firmware-ipw2x00 
+}
+
+
+function install_storage_packages() {
+  #sed -i "${target_mount_point}"/etc/lvm/lvm.conf '
+  #  s/^multipath_component_detection.*$/multipath_component_detection = 0/;
+  #  s/^md_component_detection.*$/md_component_detection = 0/;
+  #  s/^udev_sync.*$/udev_sync = 0/;
+  #  s/^udev_rules.*$/udev_rules = 0/;
+  #'
+
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install cryptsetup lvm2' \
+    || fail "Failed to install advanced partitioning tools."
+}
+
+
+function fix_editor() {
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install vim' \
+    || fail "Failed to install vim."
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y purge nano' \
+    || fail "Failed to purge nano."
+}

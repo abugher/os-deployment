@@ -1,0 +1,11 @@
+#!/bin/bash
+
+
+function make_bootable() {
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install linux-image-amd64 grub-efi' \
+    || fail "Failed to install kernel and bootloader packages."
+  sudo chroot "${target_mount_point}" update-grub \
+    || fail "Failed to update grub configuration."
+  sudo chroot "${target_mount_point}" grub-install --removable --no-uefi-secure-boot --boot-directory /boot --efi-directory /boot/efi --recheck "${device}" \
+    || fail "Failed to install grub."
+}

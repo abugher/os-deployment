@@ -3,6 +3,7 @@
 hardware=raspberry_pi
 os=raspios
 card_device=/dev/sdc
+target_mount_point=/mnt/card
 wired_interface=eth0
 wireless_interface=wlan0
 active_interface_type=wired

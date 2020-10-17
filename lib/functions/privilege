@@ -1,0 +1,41 @@
+#!/bin/bash
+
+
+function get_root() {
+  output "We're going to need some root.  Authenticate for sudo."
+  sudo -v || fail "Failed to get root."
+}
+
+
+function keep_root() {
+  while sleep 60; do 
+    sudo -v || fail "Failed to keep root."
+  done
+}
+
+
+# This gets the password for pass, but get_pass_pass looks like a typo.
+function get_pass() {
+  output "We're going to need some passwords.  Authenticate for pass."
+  pass show "${1}" \
+    > /dev/null \
+    || fail "Failed to get pass credentials."
+}
+
+
+function keep_pass() {
+  while sleep 60; do 
+  pass show "${1}" \
+    > /dev/null \
+    || fail "Failed to keep pass credentials."
+  done
+}
+
+
+function kill_loop() {
+  loop_pid="${1:-unset}"
+  if test 'unset' = "${loop_pid}"; then
+    fail 'kill_loop:  No PID specified.'
+  fi
+  kill $loop_pid || fail "Failed to kill loop, PID:  ${loop_pid}"
+}

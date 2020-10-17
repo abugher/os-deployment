@@ -1,0 +1,2 @@
+LABEL=bootstick / ext4 noatime 0 1
+UUID=${uuid} /boot/efi vfat defaults 0 1

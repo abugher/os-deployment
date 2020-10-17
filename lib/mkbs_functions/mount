@@ -1,0 +1,41 @@
+#!/bin/bash
+
+
+function unmount_prep() {
+  if mountpoint "${target_mount_point}"; then
+    sudo umount -R "${target_mount_point}" \
+      || fail "Failed to preparatively unmount mount points."
+  fi
+}
+
+
+function mount_partitions() {
+  sudo mkdir -p "${target_mount_point}" \
+    || fail "Failed to create target mount point."
+  sudo mount "${device}"2 "${target_mount_point}" \
+    || fail "Failed to mount root/boot partition."
+  sudo mkdir -p "${target_mount_point}"/boot/efi \
+    || fail "Failed to create ESP mount point."
+  sudo mount "${device}"1 "${target_mount_point}"/boot/efi \
+    || fail "Failed to mount ESP."
+}
+
+
+function mount_virtual_filesystems() {
+  sudo mount -t proc procfs "${target_mount_point}"/proc \
+    || fail "Failed to mount proc."
+  sudo mount -t sysfs sysfs "${target_mount_point}"/sys \
+    || fail "Failed to mount sys."
+  sudo mount -t devtmpfs udev "${target_mount_point}"/dev \
+    || fail "Failed to mount dev."
+  sudo mount -t devpts devpts "${target_mount_point}"/dev/pts \
+    || fail "Failed to mount dev/pts."
+  sudo tee "${target_mount_point}"/etc/hostname <<< bootstick \
+    || fail "Failed to write hostname."
+}
+
+
+function unmount_all() {
+  sudo umount -R "${target_mount_point}" \
+    || fail "Failed to unmount bootstick."
+}

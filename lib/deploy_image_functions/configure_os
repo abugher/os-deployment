@@ -1,0 +1,99 @@
+#!/bin/bash
+
+
+function configure_os() {
+  if test 'set' = "${use_big_partition:+set}"; then
+    sudo tee -a "${target_mount_point}"/etc/fstab \
+      <<< "LABEL=${big_partition_label} ${big_partition_mount_point} f2fs defaults,noatime,nodiratime 0 2" \
+      || fail "Failed to write big partition line to /etc/fstab"
+  fi
+
+  if test "set" = "${log_to_disk:+set}"; then
+    # log2ram is probably good for sd card life.
+    sudo sed -i 's/^ENABLED=.*$/ENABLED=false/' "${target_mount_point}"/etc/default/armbian-ramlog \
+      || fail "Failed to disabled log2ram."
+  fi
+
+  write_root_password_hash
+
+  sudo sed -i 's/^pi:.*$/pi:*:18409:0:99999:7:::/' "${target_mount_point}"/etc/shadow \
+    || fail "Failed to delete password hash for pi."
+
+  sudo sed -Ei 's/^pi:[^:]*:(.*)$/pi:*:\1\/home\/pi:\/bin\/bash/' "${target_mount_point}"/etc/passwd \
+    || fail "Failed to disable password authentication for pi."
+
+  for dir in "${create_directories[@]}"; do
+    sudo mkdir -p "${target_mount_point}/${dir}"
+  done
+
+  for file in "${remove_files[@]}"; do 
+    sudo rm -f "${target_mount_point}"/$file \
+      || fail "Failed to remove:  ${file}"
+  done
+
+  for file in "${null_link_files[@]}"; do
+    sudo ln -s /dev/null "${target_mount_point}"/$file \
+      || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
+  done
+
+  wpa_psk=$(pass show aaron/network/"${network_name}"/wpa_psk) \
+    || fail "Failed to read WPA PSK."
+
+  if test 'static' = $network_addressing; then
+    template wireless_interface_conf_static /etc/network/interfaces.d/"${wireless_interface}"
+  elif test 'dhcp' = $network_addressing; then
+    template wireless_interface_conf_dhcp /etc/network/interfaces.d/"${wireless_interface}"
+  else
+    fail "\$network_addressing not set or invalid.  (${network_addressing})"
+  fi
+  template wired_interface_conf /etc/network/interfaces.d/"${wired_interface}"
+
+  sudo tee -a "${target_mount_point}"/etc/network/interfaces \
+    <<< "auto ${active_interface}" \
+    || fail "Failed to write auto line to interfaces file."
+
+  template sshd_config /etc/ssh/sshd_config
+
+  sudo ln -s /lib/systemd/system/ssh.service "${target_mount_point}"/etc/systemd/system/default.target.wants/ssh.service \
+    || fail "Failed to write ssh service file."
+
+  sudo touch "${target_mount_point}"/etc/ssh/ssh_host_rsa_key \
+    || fail "Failed to initialize SSH host key."
+  sudo chmod 0600 "${target_mount_point}"/etc/ssh/ssh_host_rsa_key \
+    || fail "Failed to set permissions on SSH host key."
+
+  host_key_priv_file=../sensitive_ansible/inventory/hosts/${host}/files/ssh_keys/ssh_host_rsa_key
+  test -e "${host_key_priv_file}" \
+    || fail "SSH host key (private) is missing."
+  sudo tee "${target_mount_point}"/etc/ssh/ssh_host_rsa_key \
+    < "${host_key_priv_file}" \
+    || fail "Failed to write SSH host key (private)."
+
+  host_key_pub_file=../ansible/inventory/hosts/${host}/files/ssh_keys/ssh_host_rsa_key.pub
+  test -e "${host_key_pub_file}" \
+    || fail "SSH host key (public) is missing."
+  sudo tee "${target_mount_point}"/etc/ssh/ssh_host_rsa_key.pub \
+    < "${host_key_pub_file}" \
+    || fail "Failed to write SSH host key (public)."
+
+  sudo tee "${target_mount_point}"/root/.ssh/authorized_keys < /home/aaron/.ssh/public \
+    || fail "Failed to install authorized key."
+
+  template rc_local_conf /etc/rc.local
+
+  if test "yes" = "${kick_wifi}"; then
+    template kick_wifi_conf /usr/local/bin/kick_wifi
+
+    sudo chmod 0755 "${target_mount_point}"/usr/local/bin/kick_wifi \
+      || fail "Failed to chmod 0755 kick_wifi script."
+
+    sudo tee -a "${target_mount_point}"/etc/rc.local \
+      <<< '/usr/local/bin/kick_wifi' \
+      || fail "Failed to append kick_wifi line to:  /etc/rc.local"
+  fi
+
+  sudo tee -a "${target_mount_point}"/etc/rc.local \
+    <<< 'exit 0' \
+    || fail "Failed to write 'exit 0' line to:  /etc/rc.local"
+}
+

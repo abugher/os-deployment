@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+function partition() {
+  sudo parted -s "${device}" mklabel gpt \
+    || fail "Failed to write partition table."
+  sudo parted -s "${device}" mkpart primary fat32 1MiB 513MiB \
+    || fail "Failed to create ESP."
+  sudo parted -s "${device}" set 1 esp on \
+    || fail "Failed to set esp flag."
+  # Apparently parted will return after writing a partition, but before the new
+  # partition is visible as a device file.
+  for i in {0..99}; do
+    if test -a "${device}"1; then
+      break
+    fi
+    echo -n .
+    sleep .1
+  done
+  echo
+  sudo mkfs.vfat "${device}1" \
+    || fail "Failed to write FS to ESP."
+  sudo parted -s "${device}" mkpart primary ext4 513MiB 2GiB \
+    || fail "Failed to create root/boot partition."
+  for i in {0..99}; do
+    if test -a "${device}"2; then
+      break
+    fi
+    echo -n .
+    sleep .1
+  done
+  echo
+  sudo mkfs.ext4 -F -L bootstick "${device}"2 \
+    || fail "Failed to write FS to root/boot partition."
+  sudo tune2fs -i 0 -c 0 "${device}"2 \
+    || fail "Failed to tune FS parameters for root/boot partition."
+  sudo mkdir -p "${target_mount_point}" \
+    || fail "Failed to create mount point."
+}

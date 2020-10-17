@@ -1,0 +1,32 @@
+#!/bin/bash
+
+
+function main() {
+  get_root
+  keep_root &
+  keep_root_pid="${!}"
+
+  get_pass "aaron/${host}/root"
+  keep_pass "aaron/${host}/root" &
+  keep_pass_pid="${!}"
+
+  unmount_prep
+
+  partition
+  mount_partitions
+  initialize_os
+  mount_virtual_filesystems
+  write_fstab
+  make_bootable
+  extend_sources
+  install_networking_packages
+  #install_storage_packages
+  write_root_password_hash
+  fix_editor
+
+  unmount_all
+
+  kill_loop "${keep_root_pid}"
+  kill_loop "${keep_pass_pid}"
+}
+

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+
+function write_fstab() {
+  uuid=$(ls -l /dev/disk/by-uuid/ | awk '/..\/..\/sdb1/ {print $9}')
+  grep -q . <<< "${uuid}" \
+    || fail "Failed to determine ESP uuid."
+
+  template mkbs/fstab /etc/fstab
+}

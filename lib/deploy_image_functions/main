@@ -21,5 +21,5 @@ function main() {
   unmount_nonroot
   unmount_root
 
-  drop_root "${keep_root_pid}"
+  kill_loop "${keep_root_pid}"
 }
