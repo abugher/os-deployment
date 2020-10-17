@@ -5,6 +5,9 @@ function main() {
   get_root
   keep_root &
   keep_root_pid=$!
+  get_pass
+  keep_pass &
+  keep_pass_pid=$!
 
   # account for a sloppy user
   unmount_prep
@@ -22,4 +25,5 @@ function main() {
   unmount_root
 
   kill_loop "${keep_root_pid}"
+  kill_loop "${keep_pass_pid}"
 }
