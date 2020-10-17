@@ -11,6 +11,7 @@ function main() {
   keep_pass_pid="${!}"
 
   unmount_prep
+  safety_net "${device}"
 
   partition
   mount_partitions

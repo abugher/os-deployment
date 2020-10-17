@@ -9,8 +9,8 @@ function main() {
   keep_pass &
   keep_pass_pid=$!
 
-  # account for a sloppy user
   unmount_prep
+  safety_net "${card_device}"
 
   write_image
   create_big_partition

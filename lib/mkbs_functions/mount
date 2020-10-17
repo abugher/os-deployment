@@ -2,7 +2,7 @@
 
 
 function unmount_prep() {
-  if mountpoint "${target_mount_point}"; then
+  if mountpoint "${target_mount_point}" > /dev/null 2>&1; then
     sudo umount -R "${target_mount_point}" \
       || fail "Failed to preparatively unmount mount points."
   fi
