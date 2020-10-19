@@ -24,11 +24,11 @@ function mount_partitions() {
     || fail "Failed to mount root/boot partition."
   sudo mkdir -p "${target_mount_point}"/boot \
     || fail "Failed to create boot mount point."
-  sudo mount "${device}"2 "${target_mount_point}"/boot \
+  sudo mount "${device}"3 "${target_mount_point}"/boot \
     || fail "Failed to mount boot."
   sudo mkdir -p "${target_mount_point}"/boot/efi \
     || fail "Failed to create ESP mount point."
-  sudo mount "${device}"1 "${target_mount_point}"/boot/efi \
+  sudo mount "${device}"2 "${target_mount_point}"/boot/efi \
     || fail "Failed to mount ESP."
 }
 

@@ -2,7 +2,8 @@
 
 
 function write_fstab() {
-  uuid=$(ls -l /dev/disk/by-uuid/ | awk '/..\/..\/sdb1/ {print $9}')
+  device_name="$(sed 's/.*\///g' <<< "${device}")"
+  uuid=$(ls -l /dev/disk/by-uuid/ | grep "../../${device_name}2" | awk '{print $9}')
   grep -q . <<< "${uuid}" \
     || fail "Failed to determine ESP uuid."
 

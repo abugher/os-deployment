@@ -2,12 +2,20 @@
 
 
 function make_bootable() {
-  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install linux-image-amd64 grub-efi' \
-    || fail "Failed to install kernel and bootloader packages."
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install linux-image-amd64' \
+    || fail "Failed to install kernel package."
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install grub-pc' \
+    || fail "Failed to install grub-pc package."
+  sudo chroot "${target_mount_point}" grub-install "${device}" \
+    || fail "Failed to install grub (BIOS)."
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y remove grub-pc' \
+    || fail "Failed to remove grub-pc package."
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install grub-efi' \
+    || fail "Failed to install grub-efi package."
+  sudo chroot "${target_mount_point}" grub-install --removable --no-uefi-secure-boot --boot-directory /boot --efi-directory /boot/efi --recheck "${device}" \
+    || fail "Failed to install grub (EFI)."
   sudo chroot "${target_mount_point}" update-grub \
     || fail "Failed to update grub configuration."
-  sudo chroot "${target_mount_point}" grub-install --removable --no-uefi-secure-boot --boot-directory /boot --efi-directory /boot/efi --recheck "${device}" \
-    || fail "Failed to install grub."
   template mkbs/crypttab /etc/crypttab
   #sudo cp "${target_mount_point}"/etc/lvm/lvm.conf{,.bak}
   #sudo sed -i "${target_mount_point}"/etc/lvm/lvm.conf '
