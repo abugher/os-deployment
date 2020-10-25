@@ -3,17 +3,21 @@
 uptime >> /var/log/kick_wifi.log 2>&1
 date >> /var/log/kick_wifi.log 2>&1
 sleep 5
-date >> /var/log/kick_wifi.log 2>&1
-ip addr >> /var/log/kick_wifi.log 2>&1
-ip route >> /var/log/kick_wifi.log 2>&1
-iwlist ${wireless_interface} scan >> /var/log/kick_wifi.log 2>&1
-date >> /var/log/kick_wifi.log 2>&1
-ifdown ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
-ip addr flush ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
-ifup ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
-date >> /var/log/kick_wifi.log 2>&1
-ip addr >> /var/log/kick_wifi.log 2>&1
-ip route >> /var/log/kick_wifi.log 2>&1
-iwlist ${wireless_interface} scan >> /var/log/kick_wifi.log 2>&1
-date >> /var/log/kick_wifi.log 2>&1
-sync
+if ping -c 1 neuron.neuronpointer.net >> /var/log/kick_wifi.log 2>&1; then
+  echo "Skipping." /var/log/kick_wifi.log 2>&1
+  date >> /var/log/kick_wifi.log 2>&1
+else
+  date >> /var/log/kick_wifi.log 2>&1
+  ip addr >> /var/log/kick_wifi.log 2>&1
+  ip route >> /var/log/kick_wifi.log 2>&1
+  iwlist ${wireless_interface} scan >> /var/log/kick_wifi.log 2>&1
+  date >> /var/log/kick_wifi.log 2>&1
+  ifdown ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
+  ip addr flush ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
+  ifup ${wireless_interface} >> /var/log/kick_wifi.log 2>&1
+  date >> /var/log/kick_wifi.log 2>&1
+  ip addr >> /var/log/kick_wifi.log 2>&1
+  ip route >> /var/log/kick_wifi.log 2>&1
+  iwlist ${wireless_interface} scan >> /var/log/kick_wifi.log 2>&1
+  date >> /var/log/kick_wifi.log 2>&1
+fi
