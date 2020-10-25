@@ -2,7 +2,7 @@ This directory should be the current working directory, for relative paths.
 
     bin/deploy_image <hostname>
 
-Deploy an OS to an SD card by writing an image file to it and then making modifications.  Refer to files under var/host/ for per-hostname specifications, including hardware and OS.  Refer to files under var/hardware/ and var/os/ for hardware and OS specifications, respectively.
+Deploy an OS to an SD card by writing an image file to it and then making modifications.  Refer to files under vars/host/ for per-hostname specifications, including hardware and OS.  Refer to files under vars/hardware/ and vars/os/ for hardware and OS specifications, respectively.
 
     bin/mkbs <device>
 
