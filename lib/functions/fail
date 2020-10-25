@@ -2,6 +2,6 @@
 
 
 function fail() {
-  echo "ERROR:  ${1}" >&2
+  printf "ERROR:  ${1}\n" >&2
   exit 1
 }
