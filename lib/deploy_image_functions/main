@@ -5,8 +5,8 @@ function main() {
   get_root
   keep_root &
   keep_root_pid=$!
-  get_pass
-  keep_pass &
+  get_pass "aaron/${host}/root"
+  keep_pass "aaron/${host}/root" &
   keep_pass_pid=$!
 
   unmount_prep
