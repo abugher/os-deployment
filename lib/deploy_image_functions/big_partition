@@ -13,7 +13,7 @@ function create_big_partition() {
   wait_for_device $big_partition
   output "Zeroing big partition."
   sudo dd if=/dev/zero of=$big_partition bs=$(( 1024 * 1024 )) count=1 \
-    || fail "Failed to clobber big partition."
+    || fail "Failed to zero big partition."
   if ! test 'set' = "${use_big_partition:+set}"; then
     return 0
   fi
