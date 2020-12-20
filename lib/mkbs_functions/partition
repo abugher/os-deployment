@@ -14,40 +14,19 @@ function partition() {
     || fail "Failed to set esp flag."
   # Apparently parted will return after writing a partition, but before the new
   # partition is visible as a device file.
-  for i in {0..99}; do
-    if test -a "${device}"2; then
-      break
-    fi
-    echo -n .
-    sleep .1
-  done
-  echo
+  wait_for_device "${device}2"
   sudo mkfs.vfat "${device}2" \
     || fail "Failed to write FS to ESP."
   sudo parted -s "${device}" mkpart primary ext4 256MiB 512MiB \
     || fail "Failed to create boot partition."
-  for i in {0..99}; do
-    if test -a "${device}"3; then
-      break
-    fi
-    echo -n .
-    sleep .1
-  done
-  echo
+  wait_for_device "${device}3"
   sudo mkfs.ext4 -F -L "${host}"_boot "${device}"3 \
     || fail "Failed to write FS to boot partition."
   sudo tune2fs -i 0 -c 0 "${device}"3 \
     || fail "Failed to tune FS parameters for boot partition."
   sudo parted -s "${device}" mkpart primary ext4 512MiB 100% \
     || fail "Failed to create root partition."
-  for i in {0..99}; do
-    if test -a "${device}"4; then
-      break
-    fi
-    echo -n .
-    sleep .1
-  done
-  echo
+  wait_for_device "${device}4"
   # Are you sure you want to blow away this partition?  YES
   {
     echo -n $(

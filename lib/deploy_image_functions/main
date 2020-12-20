@@ -13,6 +13,7 @@ function main() {
   safety_net "${card_device}"
 
   write_image
+  fix_gpt
   create_big_partition
 
   mount_root

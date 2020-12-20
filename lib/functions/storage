@@ -1,0 +1,23 @@
+#!/bin/bash
+
+function rescan_storage() {
+  for scan_file in /sys/class/scsi_host/host*/scan; do
+    echo '- - -' \
+    | sudo tee $scan_file \
+    || fail "Failed to initate storage scan:  ${scan_file}"
+  done
+}
+
+
+function wait_for_device() {
+  device="${1}"
+  for i in {0..99}; do
+    if test -b "${device}"; then
+      echo
+      return 0
+    fi
+    echo -n .
+    sleep .1
+  done
+  fail "Device did not appear:  ${device}"
+}

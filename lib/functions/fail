@@ -3,5 +3,12 @@
 
 function fail() {
   printf "ERROR:  ${1}\n" >&2
+  for pid in $keep_pass_pid $keep_root_pid; do
+    ps -p $pid >/dev/null && kill $pid
+  done
   exit 1
 }
+
+
+trap 'echo; fail "Killed."' TERM
+trap 'echo; fail "Interrupted."' INT

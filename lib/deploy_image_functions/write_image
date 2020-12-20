@@ -5,14 +5,22 @@ function write_image() {
   output "Writing image."
   # https://www.armbian.com/orange-pi-pc-plus/
   # https://dl.armbian.com/orangepipcplus/Debian_stretch_next.7z.torrent
-  dd if="${image:-imageUnset}" bs=1M | pv | sudo dd bs=1M of="${card_device:-deviceUnset}" \
+  image="${image:-imageUnset}"
+  card_device="${card_device:-deviceUnset}"
+  test -e "${image}" \
+    || fail "Image file not found:  '${image}'"
+  test -b "${card_device}" \
+    || fail "Device file not found:  '${card_device}'"
+  dd if="${image}" bs=1M | pv | sudo dd bs=1M of="${card_device}" \
     || fail "Failed to write image."
-  sudo parted $card_device resizepart "${root_partition_index}" 10240MB \
-    || fail "Failed to resize root partition."
-  sudo e2fsck -f $root_partition \
-    || fail "Failed to check root filesystem."
-  sudo resize2fs $root_partition \
-    || fail "Failed to resize root filesystem."
+  if ! test 'set' = "${skip_resize_root:+set}"; then
+    sudo parted -s $card_device resizepart "${root_partition_index}" 10240MB \
+      || fail "Failed to resize root partition."
+    sudo e2fsck -f $root_partition \
+      || fail "Failed to check root filesystem."
+    sudo resize2fs $root_partition \
+      || fail "Failed to resize root filesystem."
+  fi
   sudo tune2fs -i 0 -c 0 $root_partition \
     || fail "Failed to tune root filesystem."
 }

@@ -4,22 +4,22 @@
 function create_big_partition() {
   output "Getting storage parameters."
   parted_output=$(
-    sudo parted $card_device unit s print free \
+    sudo parted -s $card_device unit s print free \
       || fail "Failed to analyze device:  '${card_device}'"
   )
-  output "Writing big partition."
-  sudo parted $card_device mkpart primary 10241MB -- -1MB \
+  output "Creating big partition."
+  sudo parted -s $card_device mkpart primary 10241MB -- -1MB \
     || fail "Failed to write big partition."
-  output "Clobbering big partition."
+  wait_for_device $big_partition
+  output "Zeroing big partition."
   sudo dd if=/dev/zero of=$big_partition bs=$(( 1024 * 1024 )) count=1 \
     || fail "Failed to clobber big partition."
-
   if ! test 'set' = "${use_big_partition:+set}"; then
     return 0
   fi
 
-  output "Writing filesystem to big partition."
-  sudo mkfs.f2fs -f -l $big_partition_label $big_partition \
+  output "Writing filesystem to big partition:  ${big_partition}"
+  sudo mkfs.f2fs -f -l "${big_partition_label}" "${big_partition}" \
     || fail "Failed to write filesystem to big partition."
 }
 
