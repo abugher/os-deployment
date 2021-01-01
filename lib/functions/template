@@ -11,7 +11,8 @@ function template() {
   # eval here allows use of variables inside the template file.
   eval content="\"$(cat templates/${conf_name})\""
 
-  sudo tee "${target_mount_point}""${target_path}" \
+  output "Templating:  ${target_mount_point}${target_path}"
+  sudo tee "${target_mount_point}${target_path}" \
     <<< "${content}" \
     || fail "Failed to write:  ${target_path}" 
 }

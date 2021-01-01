@@ -12,8 +12,8 @@ function main() {
   unmount_prep
   safety_net "${card_device}"
 
+  remove_partitions
   write_image
-  fix_gpt
   create_big_partition
 
   mount_root

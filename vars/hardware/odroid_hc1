@@ -1,3 +1,4 @@
 #!/bin/bash
 
 wired_interface=enx001e0636856d
+image_path=~/images/odroid_hc1

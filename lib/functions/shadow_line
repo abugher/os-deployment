@@ -4,6 +4,7 @@
 function shadow_line() {
   user="${1}"
   valid_characters=()
+  #output "Generating salt."
   for c in {a..z} {A..Z} {0..9} '/' '.'; do
     valid_characters+=( "${c}" )
   done
@@ -16,6 +17,7 @@ function shadow_line() {
   if ! test "${salt_length}" -eq 17; then
     fail "Failed to generate a salt of appropriate length.  ($(( salt_length - 1)) / 16)"
   fi
+  #output "Retrieving password from pass for:  '${user}@${host}'"
   pass show "aaron/${host}/${user}" \
     > /dev/null \
     || fail "Failed to retrieve password from pass for:  '${user}@${host}'"
@@ -23,6 +25,7 @@ function shadow_line() {
   if ! test "${password_length}" -gt 4; then
     fail "Failed to generate a password of appropriate length.  (${password_length} / 4)"
   fi
+  #output "Generating hash."
   hash="$(
     pass show "aaron/${host}/${user}" \
       | mkpasswd -S "${salt}" -m sha-512 --stdin \
@@ -32,10 +35,12 @@ function shadow_line() {
   if ! test "${hash_length}" -eq 107; then
     fail "Failed to generate a hash of appropriate length.  ($((hash_length - 1)) / 106)"
   fi
+  #output "Calculating days since epoch."
   days_since_epoch="$(( $(date +%s) / 60 / 60 / 24 ))"
   if ! test "${days_since_epoch}" -gt 1; then
-    fail "Failed to generate a reasonable number of days since the epoch.  (${days_since_epoch} / 1)"
+    fail "Failed to calculate a reasonable number of days since the epoch.  (${days_since_epoch} / 1)"
   fi
 
+  #output "Outputting shadow line:"
   echo "${user}:${hash}:${days_since_epoch}::::::"
 }

@@ -23,4 +23,7 @@ function write_image() {
   fi
   sudo tune2fs -i 0 -c 0 $root_partition \
     || fail "Failed to tune root filesystem."
+  if test 'set' = "${fix_gpt+set}"; then
+    fix_gpt
+  fi
 }

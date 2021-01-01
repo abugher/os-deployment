@@ -4,3 +4,4 @@ image_name=nvidia_devuan.img
 root_partition_index=1
 big_partition_index=13
 skip_resize_root='yes'
+fix_gpt=yes

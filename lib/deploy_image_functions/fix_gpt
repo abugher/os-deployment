@@ -1,5 +1,6 @@
 #!/bin/bash
 
 function fix_gpt() {
+  output "Fixing GPT."
   sudo gdisk "${card_device}" <<< "$(echo -e "x\ne\nw\nY")"
 }

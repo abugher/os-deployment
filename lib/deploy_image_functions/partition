@@ -4,16 +4,16 @@
 function create_big_partition() {
   output "Getting storage parameters."
   parted_output=$(
-    sudo parted -s $card_device unit s print free \
+    sudo parted -s "${card_device}" unit s print free \
       || fail "Failed to analyze device:  '${card_device}'"
   )
   output "Creating big partition."
   sudo parted -s $card_device mkpart primary 10241MB -- -1MB \
     || fail "Failed to write big partition."
   wait_for_device $big_partition
-  output "Zeroing big partition."
+  output "Zeroing beginning of big partition."
   sudo dd if=/dev/zero of=$big_partition bs=$(( 1024 * 1024 )) count=1 \
-    || fail "Failed to zero big partition."
+    || fail "Failed to zero beginning of big partition."
   if ! test 'set' = "${use_big_partition:+set}"; then
     return 0
   fi
@@ -28,18 +28,36 @@ function sync_big_partition() {
   if ! test 'set' = "${use_big_partition:+set}"; then
     return 0
   fi
-  sudo mount -t f2fs $big_partition "${target_mount_point}"2 \
+  output "Mounting:  ${big_partition}"
+  output "  ... to:  ${target_mount_point}2"
+  sudo mount -t f2fs "${big_partition}" "${target_mount_point}2" \
     || fail "Failed to mount big partition to alternative mount point."
+  output "Syncing old contents of mount point to new big partition..."
+  output "... from:  ${target_mount_point}${big_partition_mount_point}/"
+  output "  ... to:  ${target_mount_point}2/"
   sudo mkdir -p "${target_mount_point}${big_partition_mount_point}/" \
     || fail "Failed to create mount point."
-  sudo rsync -a "${target_mount_point}${big_partition_mount_point}/" "${target_mount_point}"2/ \
+  sudo rsync -a "${target_mount_point}${big_partition_mount_point}/" "${target_mount_point}2/" \
     || fail "Failed to sync contents of mount point to big partition."
+  output "Removing old contents of mount point."
   for f in $(ls -a "${target_mount_point}${big_partition_mount_point}/"); do
     if ! test '.' = "${f}" && ! test '..' = "${f}"; then
       sudo rm -rf "${target_mount_point}${big_partition_mount_point}/${f}" \
         || fail "Failed to remove contents of mount point."
     fi
   done
-  sudo umount "${target_mount_point}"2/ \
+  output "Unmounting:  ${target_mount_point}2/"
+  sudo umount "${target_mount_point}2/" \
     || fail "Failed to unmount big partition from alternate mount point."
+}
+
+
+function remove_partitions() {
+  output "Removing partitions."
+  for partition_device in "${card_device}"*; do
+    index="$(sed 's/^[^0-9]*//g' <<< "${partition_device}")"
+    if test '' = "${index}"; then continue; fi
+    output "Removing partition ${index}."
+    sudo parted -s "${card_device}" rm "${index}"
+  done
 }
