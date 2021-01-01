@@ -47,5 +47,21 @@ eval $(awk -F '[: ]*' '/ip_address/ {print $1"="$2}' "${ansible_host_vars_file}"
 test 'set' = "${ip_address:+set}" \
   || fail "\$ip_address not set."
 
-
-time main "${@}"
+# Invoke the main function.  Respect the debug level specified in DEBUG_LEVEL.
+# All functions are now free to direct output to file descriptors indexed up to
+# max_debug_level.  Descriptors with index higher than DEBUG_LEVEL will be
+# silenced.
+#
+# DEBUG_LEVEL less than 2 will silence stderr; less than 1 will silence stdout.
+# That could be problematic and is not advised, but it is allowed.
+eval time main "\"\${@}\"" $(
+  for ((d=1; d<=max_debug_level; d++)); do 
+    if test "${d}" -eq 2; then
+      echo "${d}>&2"
+    elif test "${d}" -le "${DEBUG_LEVEL}"; then 
+      echo "${d}>&1"
+    else 
+      echo "${d}>/dev/null"
+    fi
+  done
+)

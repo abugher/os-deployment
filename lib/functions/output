@@ -1,6 +1,19 @@
 #!/bin/bash
 
 
+max_debug_level=10
+if ! grep -Eq '^[0-9]+$' <<< "${DEBUG_LEVEL}"; then
+  DEBUG_LEVEL=2
+fi
+if test "${DEBUG_LEVEL}" -gt "${max_debug_level}"; then
+  DEBUG_LEVEL="${max_debug_level}"
+fi
+
+export debug_level_commentary=1
+export debug_level_subcommand_output=3
+export debug_level_file_contents=4
+
+
 function output() {
-  echo "OUTPUT:  ${1}"
+  eval printf "'OUTPUT:  %s\\n'" "\"\${1}\"" ">&${debug_level_commentary}"
 }
