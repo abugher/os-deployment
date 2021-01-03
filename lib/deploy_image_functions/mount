@@ -3,9 +3,9 @@
 
 function unmount_prep() {
   for m in "${target_mount_point}"/boot "${target_mount_point}${big_partition_mount_point}" "${target_mount_point}" "${target_mount_point}"2; do
-    if mountpoint "${m}" > /dev/null 2>&1; then
+    if eval mountpoint -q '"${m}"' ">&${debug_level_command_output}" > /dev/null 2>&1; then
       output "Unmounting:  ${m}"
-      sudo umount "${m}" \
+      eval sudo umount '"${m}"' ">&${debug_level_command_output}" \
         || fail "Failed to preparatively unmount:  ${m}"
     else
       output "Not a mount point:  ${m}"
@@ -17,13 +17,13 @@ function unmount_prep() {
 function unmount_nonroot() {
   if test 'set' = "${use_big_partition:+set}"; then
     output "Unmounting:  ${target_mount_point}${big_partition_mount_point}"
-    sudo umount "${target_mount_point}${big_partition_mount_point}" \
+    eval sudo umount '"${target_mount_point}${big_partition_mount_point}"' ">&${debug_level_command_output}" \
       || fail "Failed to unmount big partition."
   fi
 
   if test 'set' = "${boot_partition:+set}"; then
-    output "Unmounting:  ${target_mount_point}"
-    sudo umount "${target_mount_point}"/boot \
+    output "Unmounting:  ${target_mount_point}/boot"
+    eval sudo umount '"${target_mount_point}/boot"' ">&${debug_level_command_output}" \
       || fail "Failed to unmount boot partition."
   fi
 }
@@ -31,7 +31,7 @@ function unmount_nonroot() {
 
 function unmount_root() {
   output "Unmounting:  ${target_mount_point}"
-  sudo umount "${target_mount_point}" \
+  eval sudo umount '"${target_mount_point}"' ">&${debug_level_command_output}" \
     || fail "Failed to unmount root partition."
 }
 
@@ -40,15 +40,15 @@ function mount_nonroot() {
   if test 'set' = "${boot_partition:+set}"; then
     output "Mounting:  ${boot_partition}"
     output "  ... on:  ${target_mount_point}/boot"
-    sudo mkdir -p "${target_mount_point}/boot"
-    sudo mount "${boot_partition}" "${target_mount_point}/boot" \
+    eval sudo mkdir -p '"${target_mount_point}/boot"' ">&${debug_level_command_output}"
+    eval sudo mount '"${boot_partition}" "${target_mount_point}/boot"' ">&${debug_level_command_output}" \
       || fail "Failed to mount boot partition."
   fi
 
   if test 'set' = "${use_big_partition:+set}"; then
     output "Mounting:  ${big_partition}"
     output "  ... on:  ${target_mount_point}${big_partition_mount_point}"
-    sudo mount -t f2fs "${big_partition}" "${target_mount_point}${big_partition_mount_point}" \
+    eval sudo mount -t f2fs '"${big_partition}"' '"${target_mount_point}${big_partition_mount_point}"' ">&${debug_level_command_output}" \
       || fail "Failed to mount big partition."
   fi
 }
@@ -57,6 +57,6 @@ function mount_nonroot() {
 function mount_root() {
   output "Mounting:  "${root_partition}
   output "  ... on:  ${target_mount_point}"
-  sudo mount "${root_partition}" "${target_mount_point}" \
+  eval sudo mount '"${root_partition}"' '"${target_mount_point}"' ">&${debug_level_command_output}" \
     || fail "Failed to mount root partition."
 }

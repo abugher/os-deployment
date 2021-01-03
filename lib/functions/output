@@ -10,7 +10,7 @@ if test "${DEBUG_LEVEL}" -gt "${max_debug_level}"; then
 fi
 
 export debug_level_commentary=1
-export debug_level_subcommand_output=3
+export debug_level_command_output=3
 export debug_level_file_contents=4
 
 

@@ -1,3 +1,4 @@
 #!/bin/bash
 
 image_name=armbian.img
+disable_predictable_ifnames_for_armbian=y

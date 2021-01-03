@@ -3,13 +3,13 @@
 
 function get_root() {
   output "We're going to need some root.  Authenticate for sudo."
-  sudo -v || fail "Failed to get root."
+  eval sudo -v ">&${debug_level_command_output}" || fail "Failed to get root."
 }
 
 
 function keep_root() {
   while sleep 60; do 
-    sudo -v || fail "Failed to keep root."
+    eval sudo -v ">&${debug_level_command_output}" || fail "Failed to keep root."
   done
 }
 
@@ -37,5 +37,5 @@ function kill_loop() {
   if test 'unset' = "${loop_pid}"; then
     fail 'kill_loop:  No PID specified.'
   fi
-  kill $loop_pid || fail "Failed to kill loop, PID:  ${loop_pid}"
+  eval kill '"${loop_pid}"' ">&${debug_level_command_output}" || fail "Failed to kill loop, PID:  ${loop_pid}"
 }

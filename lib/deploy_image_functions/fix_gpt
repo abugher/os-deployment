@@ -2,5 +2,6 @@
 
 function fix_gpt() {
   output "Fixing GPT."
-  sudo gdisk "${card_device}" <<< "$(echo -e "x\ne\nw\nY")"
+  eval sudo gdisk '"${card_device}"' '<<<' '"$(echo -e "x\ne\nw\nY")"' ">&${debug_level_command_output}" \
+    || fail "Failed to fix GPT."
 }

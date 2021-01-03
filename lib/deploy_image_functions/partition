@@ -8,18 +8,18 @@ function create_big_partition() {
       || fail "Failed to analyze device:  '${card_device}'"
   )
   output "Creating big partition."
-  sudo parted -s $card_device mkpart primary 10241MB -- -1MB \
+  eval sudo parted -s '"${card_device}"' mkpart primary 10241MB -- -1MB ">&${debug_level_command_output}" \
     || fail "Failed to write big partition."
   wait_for_device $big_partition
   output "Zeroing beginning of big partition."
-  sudo dd if=/dev/zero of=$big_partition bs=$(( 1024 * 1024 )) count=1 \
+  eval sudo dd if=/dev/zero of='"${big_partition}"' bs=$(( 1024 * 1024 )) count=1 status=none ">&${debug_level_command_output}" \
     || fail "Failed to zero beginning of big partition."
   if ! test 'set' = "${use_big_partition:+set}"; then
     return 0
   fi
 
   output "Writing filesystem to big partition:  ${big_partition}"
-  sudo mkfs.f2fs -f -l "${big_partition_label}" "${big_partition}" \
+  eval sudo mkfs.f2fs -f -l '"${big_partition_label}"' '"${big_partition}"' ">&${debug_level_command_output}" \
     || fail "Failed to write filesystem to big partition."
 }
 
@@ -30,24 +30,24 @@ function sync_big_partition() {
   fi
   output "Mounting:  ${big_partition}"
   output "  ... to:  ${target_mount_point}2"
-  sudo mount -t f2fs "${big_partition}" "${target_mount_point}2" \
+  eval sudo mount -t f2fs '"${big_partition}"' '"${target_mount_point}2"' ">&${debug_level_command_output}" \
     || fail "Failed to mount big partition to alternative mount point."
   output "Syncing old contents of mount point to new big partition..."
   output "... from:  ${target_mount_point}${big_partition_mount_point}/"
   output "  ... to:  ${target_mount_point}2/"
-  sudo mkdir -p "${target_mount_point}${big_partition_mount_point}/" \
+  eval sudo mkdir -p '"${target_mount_point}${big_partition_mount_point}/"' ">&${debug_level_command_output}" \
     || fail "Failed to create mount point."
-  sudo rsync -a "${target_mount_point}${big_partition_mount_point}/" "${target_mount_point}2/" \
+  eval sudo rsync -a '"${target_mount_point}${big_partition_mount_point}/"' '"${target_mount_point}2/"' ">&${debug_level_command_output}" \
     || fail "Failed to sync contents of mount point to big partition."
   output "Removing old contents of mount point."
   for f in $(ls -a "${target_mount_point}${big_partition_mount_point}/"); do
     if ! test '.' = "${f}" && ! test '..' = "${f}"; then
-      sudo rm -rf "${target_mount_point}${big_partition_mount_point}/${f}" \
+      eval sudo rm -rf '"${target_mount_point}${big_partition_mount_point}/${f}"' ">&${debug_level_command_output}" \
         || fail "Failed to remove contents of mount point."
     fi
   done
   output "Unmounting:  ${target_mount_point}2/"
-  sudo umount "${target_mount_point}2/" \
+  eval sudo umount '"${target_mount_point}2/"' ">&${debug_level_command_output}" \
     || fail "Failed to unmount big partition from alternate mount point."
 }
 
@@ -58,6 +58,7 @@ function remove_partitions() {
     index="$(sed 's/^[^0-9]*//g' <<< "${partition_device}")"
     if test '' = "${index}"; then continue; fi
     output "Removing partition ${index}."
-    sudo parted -s "${card_device}" rm "${index}"
+    eval sudo parted -s '"${card_device}"' rm '"${index}"' ">&${debug_level_command_output}" \
+      || fail "Failed to remove partition ${index}."
   done
 }

@@ -2,8 +2,9 @@
 
 function rescan_storage() {
   for scan_file in /sys/class/scsi_host/host*/scan; do
+    output "Initiating storage scan:  ${scan_file}"
     echo '- - -' \
-    | sudo tee $scan_file \
+    | sudo tee $scan_file >/dev/null \
     || fail "Failed to initate storage scan:  ${scan_file}"
   done
 }
@@ -11,6 +12,7 @@ function rescan_storage() {
 
 function wait_for_device() {
   device="${1}"
+  output "Waiting for device:  ${device}"
   for i in {0..99}; do
     if test -b "${device}"; then
       echo

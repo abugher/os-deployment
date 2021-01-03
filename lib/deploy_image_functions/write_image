@@ -11,17 +11,17 @@ function write_image() {
     || fail "Image file not found:  '${image}'"
   test -b "${card_device}" \
     || fail "Device file not found:  '${card_device}'"
-  dd if="${image}" bs=1M | pv | sudo dd bs=1M of="${card_device}" \
+  eval dd if='"${image}"' bs=1M status=none \| pv "2>&${debug_level_command_output}" \| sudo dd bs=1M of='"${card_device}"' status=none ">&${debug_level_command_output}" \
     || fail "Failed to write image."
   if ! test 'set' = "${skip_resize_root:+set}"; then
-    sudo parted -s $card_device resizepart "${root_partition_index}" 10240MB \
+    eval sudo parted -s '"${card_device}"' resizepart '"${root_partition_index}"' 10240MB ">&${debug_level_command_output}" \
       || fail "Failed to resize root partition."
-    sudo e2fsck -f $root_partition \
+    eval sudo e2fsck -fy '"${root_partition}"' ">&${debug_level_command_output}" \
       || fail "Failed to check root filesystem."
-    sudo resize2fs $root_partition \
+    eval sudo resize2fs '"${root_partition}"' ">&${debug_level_command_output}" \
       || fail "Failed to resize root filesystem."
   fi
-  sudo tune2fs -i 0 -c 0 $root_partition \
+  eval sudo tune2fs -i 0 -c 0 '"${root_partition}"' ">&${debug_level_command_output}" \
     || fail "Failed to tune root filesystem."
   if test 'set' = "${fix_gpt+set}"; then
     fix_gpt

@@ -3,6 +3,7 @@
 
 function safety_net() {
   safe_device="${1}"
+  output "Checking whether device is in use:  '${safe_device}'"
   for d in $(mount | awk -F '[0-9 ]' '/^\// {print $1}' | sort | uniq); do
     if test "${d}" = "${safe_device}"; then
       fail "Device is in use:  '${safe_device}'"
