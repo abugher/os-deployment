@@ -1,6 +1,15 @@
 #!/bin/bash
 
 
+function resize_root_partition() {
+  if test 'set' = "${root_partition_end:+set}"; then
+    output "Resizing root partition."
+    eval sudo parted -s '"${card_device}"' '"${root_partition_end}"' ">&${debug_level_command_output}" \
+      || fail "Failed to resize root partition."
+  fi
+}
+
+
 function create_big_partition() {
   output "Getting storage parameters."
   parted_output=$(
@@ -19,7 +28,20 @@ function create_big_partition() {
   fi
 
   output "Writing filesystem to big partition:  ${big_partition}"
-  eval sudo mkfs.f2fs -f -l '"${big_partition_label}"' '"${big_partition}"' ">&${debug_level_command_output}" \
+  case "${big_partition_filesystem}" in
+    f2fs)
+      force_flag='-f'
+      label_flag='-l'
+      ;;
+    ext4)
+      force_flag='-F'
+      label_flag='-L'
+      ;;
+    *)
+      fail "Unrecognized filesystem for big partition:  ${big_partition_filesystem}"
+      ;;
+  esac
+  eval sudo mkfs.'"${big_partition_filesystem}"' '"${force_flag}"' '"${label_flag}"' '"${big_partition_label}"' '"${big_partition}"' ">&${debug_level_command_output}" \
     || fail "Failed to write filesystem to big partition."
 }
 
@@ -30,7 +52,7 @@ function sync_big_partition() {
   fi
   output "Mounting:  ${big_partition}"
   output "  ... to:  ${target_mount_point}2"
-  eval sudo mount -t f2fs '"${big_partition}"' '"${target_mount_point}2"' ">&${debug_level_command_output}" \
+  eval sudo mount -t '"${big_partition_filesystem}"' '"${big_partition}"' '"${target_mount_point}2"' ">&${debug_level_command_output}" \
     || fail "Failed to mount big partition to alternative mount point."
   output "Syncing old contents of mount point to new big partition..."
   output "... from:  ${target_mount_point}${big_partition_mount_point}/"

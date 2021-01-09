@@ -48,7 +48,7 @@ function mount_nonroot() {
   if test 'set' = "${use_big_partition:+set}"; then
     output "Mounting:  ${big_partition}"
     output "  ... on:  ${target_mount_point}${big_partition_mount_point}"
-    eval sudo mount -t f2fs '"${big_partition}"' '"${target_mount_point}${big_partition_mount_point}"' ">&${debug_level_command_output}" \
+    eval sudo mount -t '"${big_partition_filesystem}"' '"${big_partition}"' '"${target_mount_point}${big_partition_mount_point}"' ">&${debug_level_command_output}" \
       || fail "Failed to mount big partition."
   fi
 }

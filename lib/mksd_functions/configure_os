@@ -2,10 +2,22 @@
 
 
 function configure_os() {
+  if test 'set' = "${fstab_root_device:+set}"; then
+    output "Fixing root line in /etc/fstab."
+    if awk '/^[^#]/ {print $2}' "${target_mount_point}"/etc/fstab | grep -q '^/$'; then
+      sudo sed -i -E "s#^[^[:space:]]+([[:space:]]+/[[:space:]])#${fstab_root_device}\\1#" "${target_mount_point}"/etc/fstab \
+        || fail "Failed to modify root line in /etc/fstab."
+    else
+      eval sudo tee -a '"${target_mount_point}/etc/fstab"' \
+        '<<<' '"${fstab_root_device}" / ext4 noatime,defaults 0 1' ">&${debug_level_file_contents}" \
+        || fail "Failed to add root line to /etc/fstab."
+    fi
+  fi
+
   if test 'set' = "${use_big_partition:+set}"; then
     output "Writing big partition line to /etc/fstab."
     eval sudo tee -a '"${target_mount_point}/etc/fstab"' \
-      '<<<' '"LABEL=${big_partition_label} ${big_partition_mount_point} f2fs defaults,noatime,nodiratime 0 2"' ">&${debug_level_file_contents}" \
+      '<<<' '"LABEL=${big_partition_label} ${big_partition_mount_point} ${big_partition_filesystem} defaults,noatime,nodiratime 0 2"' ">&${debug_level_file_contents}" \
       || fail "Failed to write big partition line to /etc/fstab"
   fi
 

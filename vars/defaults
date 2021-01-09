@@ -15,6 +15,7 @@ big_partition_index=2
 use_big_partition=1
 big_partition_label=log
 big_partition_mount_point=/var/log
+big_partition_filesystem=f2fs
 unset log_to_disk
 
 create_directories=(

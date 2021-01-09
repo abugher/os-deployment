@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for lib in lib/functions/* lib/deploy_image_functions/*; do
+for lib in lib/functions/* lib/mksd_functions/*; do
   if ! source "${lib}"; then
     echo "ERROR:  Failed to source:  ${lib}" >&2
     exit 1
