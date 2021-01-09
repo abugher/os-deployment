@@ -56,12 +56,7 @@ function configure_os() {
     fail "\$network_addressing not set or invalid.  (${network_addressing})"
   fi
   template wired_interface_conf /etc/network/interfaces.d/"${wired_interface}"
-
-  output "Writing auto line to interfaces file."
-  eval sudo tee -a '"${target_mount_point}/etc/network/interfaces"' \
-    '<<<' '"auto ${active_interface}"' \
-    ">&${debug_level_file_contents}" \
-    || fail "Failed to write auto line to interfaces file."
+  template master_interfaces_conf /etc/network/interfaces
 
   if test 'set' = "${disable_predictable_ifnames_for_armbian:+set}"; then
     output "Disabling predictable network interface naming in:  /boot/armbianEnv.txt"

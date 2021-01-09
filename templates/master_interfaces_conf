@@ -1,0 +1,2 @@
+source-directory /etc/network/interfaces.d
+auto ${active_interface}
