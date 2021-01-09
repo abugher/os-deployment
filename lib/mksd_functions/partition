@@ -4,8 +4,12 @@
 function resize_root_partition() {
   if test 'set' = "${root_partition_end:+set}"; then
     output "Resizing root partition."
-    eval sudo parted -s '"${card_device}"' '"${root_partition_end}"' ">&${debug_level_command_output}" \
+    eval sudo parted -s '"${card_device}"' resizepart '"${root_partition_index}"' '"${root_partition_end}"' ">&${debug_level_command_output}" \
       || fail "Failed to resize root partition."
+    wait_for_device "${root_partition}"
+    output "Resizing root filesystem."
+    eval sudo resize2fs '"${root_partition}"' ">&${debug_level_command_output}" \
+      || fail "Failed to resize root filesystem."
   fi
 }
 

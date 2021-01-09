@@ -1,7 +1,7 @@
 #!/bin/bash
 
 image_name='nvidia_devuan.img'
-root_partition_end='4GB'
+root_partition_end='9GiB'
 root_partition_index='1'
 big_partition_index='13'
 skip_resize_root='yes'
