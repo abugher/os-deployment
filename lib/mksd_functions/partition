@@ -21,7 +21,7 @@ function create_big_partition() {
       || fail "Failed to analyze device:  '${card_device}'"
   )
   output "Creating big partition."
-  eval sudo parted -s '"${card_device}"' mkpart primary 10241MB -- -1MB ">&${debug_level_command_output}" \
+  eval sudo parted -s '"${card_device}"' mkpart primary '"${big_partition_start}"' -- -1MB ">&${debug_level_command_output}" \
     || fail "Failed to write big partition."
   wait_for_device $big_partition
   output "Zeroing beginning of big partition."
