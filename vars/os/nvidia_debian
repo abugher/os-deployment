@@ -1,0 +1,9 @@
+#!/bin/bash
+
+image_name='nvidia_debian.img'
+root_partition_index='1'
+big_partition_index='13'
+skip_resize_root='yes'
+fix_gpt='yes'
+big_partition_filesystem='ext4'
+fstab_root_device='/dev/mmcblk0p1'

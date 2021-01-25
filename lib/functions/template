@@ -12,6 +12,8 @@ function template() {
   eval content="\"$(cat templates/${conf_name})\""
 
   output "Templating:  ${target_mount_point}${target_path}"
+  eval sudo mkdir -p '"${target_mount_point}${target_path%/*}"' ">&${debug_level_file_contents}" \
+    || fail "Failed to create directory:  ${target_path%/*}" 
   eval sudo tee '"${target_mount_point}${target_path}"' '<<<' '"${content}"' ">&${debug_level_file_contents}" \
     || fail "Failed to write:  ${target_path}" 
 }

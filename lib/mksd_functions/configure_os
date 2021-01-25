@@ -50,9 +50,13 @@ function configure_os() {
   done
 
   for file in "${null_link_files[@]}"; do
-    output "Replacing file with symlink to /dev/null:  '${file}'"
-    eval sudo ln -s /dev/null '"${target_mount_point}/$file"' ">&${debug_level_command_output}" \
-      || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
+    if test -d "${target_mount_point}/${file%/*}"; then
+      output "Replacing file with symlink to /dev/null:  '${file}'"
+      eval sudo ln -s /dev/null '"${target_mount_point}/${file}"' ">&${debug_level_command_output}" \
+        || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
+    else
+      output "No such directory.  Skipping:  '${file}'"
+    fi
   done
 
   output "Reading WPA PSK from pass."

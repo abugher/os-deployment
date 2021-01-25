@@ -8,6 +8,8 @@ function resize_root_partition() {
       || fail "Failed to resize root partition."
     wait_for_device "${root_partition}"
     output "Resizing root filesystem."
+    eval sudo e2fsck -fy '"${root_partition}"' ">&${debug_level_command_output}" \
+      || fail "Failed to check root filesystem."
     eval sudo resize2fs '"${root_partition}"' ">&${debug_level_command_output}" \
       || fail "Failed to resize root filesystem."
   fi
