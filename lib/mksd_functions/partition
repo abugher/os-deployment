@@ -3,6 +3,8 @@
 
 function resize_root_partition() {
   if test 'set' = "${root_partition_end:+set}"; then
+    # Order of operations here (resize partition then resize filesystem) is
+    # only correct if the volume is growing, not shrinking.
     output "Resizing root partition."
     eval sudo parted -s '"${card_device}"' resizepart '"${root_partition_index}"' '"${root_partition_end}"' ">&${debug_level_command_output}" \
       || fail "Failed to resize root partition."

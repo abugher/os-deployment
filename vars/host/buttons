@@ -2,7 +2,8 @@
 
 hardware=jetson_nano
 #os=nvidia_devuan
-os=nvidia_debian
+#os=nvidia_debian
+os=nvidia_ubuntu
 big_partition_label=home
 big_partition_mount_point=/home
 active_interface_type=wireless
