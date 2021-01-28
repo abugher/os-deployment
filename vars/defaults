@@ -1,23 +1,29 @@
 #!/bin/bash
 
-hardware=raspberry_pi
-os=raspios
-card_device=/dev/sdc
-target_mount_point=/mnt/card
-wired_interface=eth0
-wireless_interface=wlan0
-active_interface_type=wired
-network_name=puppies
-network_addressing=static
+hardware='raspberry_pi'
+os='raspios'
+card_device='/dev/sdc'
+target_mount_point='/mnt/card'
+wired_interface='eth0'
+wireless_interface='wlan0'
+active_interface_type='wired'
+network_name='puppies'
+network_addressing='static'
 unset boot_partition_index
-root_partition_index=1
-big_partition_index=2
-use_big_partition=1
-big_partition_label=log
-big_partition_start=10241MB 
-big_partition_mount_point=/var/log
-big_partition_filesystem=f2fs
-root_partition_end='9GiB'
+root_partition_index='1'
+big_partition_index='2'
+use_big_partition='1'
+read bs < "/sys/block/${card_device##*/}/queue/physical_block_size" || fail "Failed to get block size."
+KiB='1024'
+MiB="$(( 1024 * KiB ))"
+GiB="$(( 1024 * MiB ))"
+root_partition_end_bytes="$(( 10 * GiB ))"
+big_partition_start_bytes="$(( root_partition_end_bytes + 1 * bs ))"
+root_partition_end="${root_partition_end_bytes}B"
+big_partition_start="${big_partition_start_bytes}B"
+big_partition_label='log'
+big_partition_mount_point='/var/log'
+big_partition_filesystem='f2fs'
 unset log_to_disk
 
 create_directories=(
