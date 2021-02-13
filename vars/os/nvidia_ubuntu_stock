@@ -2,6 +2,8 @@
 
 image_name='nvidia_ubuntu_stock.img'
 root_partition_index='1'
+# Default root is 13GB and comes stuffed full.
+root_partition_end_minimum_g=20
 fix_gpt='yes'
 big_partition_index='15'
 big_partition_filesystem='ext4'

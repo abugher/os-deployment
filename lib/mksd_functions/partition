@@ -27,12 +27,17 @@ function create_big_partition() {
   output "Creating big partition."
   eval sudo parted -s '"${card_device}"' mkpart primary '"${big_partition_start}"' '"${big_partition_end}"' ">&${debug_level_command_output}" \
     || fail "Failed to write big partition."
-  wait_for_device $big_partition
+  wait_for_device "${big_partition}"
   output "Zeroing beginning of big partition."
   eval sudo dd if=/dev/zero of='"${big_partition}"' bs=$(( 1024 * 1024 )) count=1 status=none ">&${debug_level_command_output}" \
     || fail "Failed to zero beginning of big partition."
   if ! test 'set' = "${use_big_partition:+set}"; then
     return 0
+  fi
+
+  if ! test -b "${big_partition}"; then
+    output "DEBUG:  $(ls -l "${big_partition}")"
+    fail "Big partition device file (${big_partition}) is not a block device.  (1)"
   fi
 
   output "Writing filesystem to big partition:  ${big_partition}"
@@ -49,8 +54,20 @@ function create_big_partition() {
       fail "Unrecognized filesystem for big partition:  ${big_partition_filesystem}"
       ;;
   esac
+
+  if ! test -b "${big_partition}"; then
+    output "DEBUG:  $(ls -l "${big_partition}")"
+    fail "Big partition device file (${big_partition}) is not a block device.  (2)"
+  fi
+
   eval sudo mkfs.'"${big_partition_filesystem}"' '"${force_flag}"' '"${label_flag}"' '"${big_partition_label}"' '"${big_partition}"' ">&${debug_level_command_output}" \
     || fail "Failed to write filesystem to big partition."
+
+
+  if ! test -b "${big_partition}"; then
+    output "DEBUG:  $(ls -l "${big_partition}")"
+    fail "Big partition device file (${big_partition}) is not a block device.  (3)"
+  fi
 }
 
 
@@ -87,6 +104,10 @@ function remove_partitions() {
   for partition_device in "${card_device}"*; do
     index="$(sed 's/^[^0-9]*//g' <<< "${partition_device}")"
     if test '' = "${index}"; then continue; fi
+    if test -f "${card_device}${index}"; then
+      output "DEBUG:  $(ls -l "${card_device}${index}")"
+      fail "Regular file at device file location:  ${card_device}${index}"
+    fi
     output "Removing partition ${index}."
     eval sudo parted -s '"${card_device}"' rm '"${index}"' ">&${debug_level_command_output}" \
       || fail "Failed to remove partition ${index}."
