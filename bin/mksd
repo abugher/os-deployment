@@ -1,14 +1,11 @@
 #!/bin/bash
 
-for lib in lib/functions/* lib/mksd_functions/*; do
+for lib in lib/functions/* lib/mksd_functions/* vars/defaults/*; do
   if ! source "${lib}"; then
     echo "ERROR:  Failed to source:  ${lib}" >&2
     exit 1
   fi
 done
-
-source vars/defaults \
-  || fail "Failed to source:  vars/defaults"
 
 if test 'set' = "${1:+set}"; then
   host="${1}"

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+wired_interface='eth0'
+wireless_interface='wlan0'
+active_interface_type='wired'
+network_name='puppies'
+network_addressing='static'

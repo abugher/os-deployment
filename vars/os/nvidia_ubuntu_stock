@@ -1,8 +1,8 @@
 #!/bin/bash
 
-image_name='nvidia_devuan.img'
+image_name='nvidia_ubuntu_stock.img'
 root_partition_index='1'
 fix_gpt='yes'
-big_partition_index='13'
+big_partition_index='15'
 big_partition_filesystem='ext4'
 fstab_root_device='/dev/mmcblk0p1'

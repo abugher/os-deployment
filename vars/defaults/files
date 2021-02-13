@@ -1,45 +1,5 @@
 #!/bin/bash
 
-hardware='raspberry_pi'
-os='raspios'
-card_device='/dev/sdc'
-target_mount_point='/mnt/card'
-wired_interface='eth0'
-wireless_interface='wlan0'
-active_interface_type='wired'
-network_name='puppies'
-network_addressing='static'
-unset boot_partition_index
-root_partition_index='1'
-big_partition_index='2'
-use_big_partition='1'
-read bs < "/sys/block/${card_device##*/}/queue/physical_block_size" || fail "Failed to get block size."
-KiB='1024'
-MiB="$(( 1024 * KiB ))"
-GiB="$(( 1024 * MiB ))"
-root_partition_end_bytes="$(( 10 * GiB ))"
-big_partition_start_bytes="$(( root_partition_end_bytes + 1 * bs ))"
-root_partition_end="${root_partition_end_bytes}B"
-big_partition_start="${big_partition_start_bytes}B"
-big_partition_label='log'
-big_partition_mount_point='/var/log'
-big_partition_filesystem='f2fs'
-unset log_to_disk
-
-create_directories=(
-  '/etc/init.d/'
-  '/etc/systemd/network/'
-  '/etc/systemd/system/default.target.wants/'
-  '/etc/systemd/system/multi-user.target.wants/'
-  '/lib/systemd/system/'
-  '/usr/bin/'
-  '/usr/lib/armbian/'
-  '/usr/local/bin/'
-  '/etc/ssh/'
-  '/etc/systemd/system/default.target.wants'
-  '/root/.ssh'
-)
-
 remove_files=(
   '/etc/rc3.d/S01resize2fs_once'
   '/etc/init.d/resize2fs_once'
@@ -75,6 +35,22 @@ remove_files=(
   '/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/regenerate_ssh_host_keys.service'
 )
 
+# Directories paths for null links, below.  (Might be better to derive these on the fly from null_link_files.)
+create_directories=(
+  '/etc/init.d/'
+  '/etc/systemd/network/'
+  '/etc/systemd/system/default.target.wants/'
+  '/etc/systemd/system/multi-user.target.wants/'
+  '/lib/systemd/system/'
+  '/usr/bin/'
+  '/usr/lib/armbian/'
+  '/usr/local/bin/'
+  '/etc/ssh/'
+  '/etc/systemd/system/default.target.wants'
+  '/root/.ssh'
+)
+
+# Disable undesired services.  Each of these should also be in remove_files.  (Might be better to automatically combine the lists at time of use.)
 null_link_files=(
   '/etc/init.d/dhcpcd'
   '/etc/systemd/network/99-default.link'

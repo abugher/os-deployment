@@ -1,0 +1,5 @@
+#!/bin/bash
+
+hardware='raspberry_pi'
+os='raspios'
+unset log_to_disk

@@ -14,6 +14,12 @@ function main() {
 
   remove_partitions
   write_image
+
+  if ! source vars/derived/partition; then
+    echo "ERROR:  Failed to source:  vars/derived/partition" >&2
+    exit 1
+  fi
+
   resize_root_partition
   create_big_partition
 
