@@ -23,3 +23,17 @@ Deploy an OS to a USB storage device by running debootstrap then making modifica
 | openssl     | openssl |
 | mkpasswd    | whois   |
 | pv          | pv      |
+
+
+# Bugs:
+
+I had some fun using file descriptors to establish debugging levels, but the
+way I did it really made most of this code look awful.  I need to get rid of that.
+
+Right now there are three related lists used to mask systemd services:
+* Files to remove.
+* Directories to create.
+* Files to symlink to /dev/null.
+Two problems, here.
+1.  The code should be changed to automatically remove files destined for null-linking, so that the remove and symlink lists can be deduplicated.
+2.  These lists should be broken down and distributed to the appropriate platform-specific vars files, instead of assuming they all need to be handled all the time. 

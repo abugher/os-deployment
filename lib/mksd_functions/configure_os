@@ -2,6 +2,18 @@
 
 
 function configure_os() {
+  fix_fstab
+  fix_logging
+  fix_passwd
+  nuke_files
+  fix_default_target
+  fix_network
+  fix_ssh
+  fix_rc_local
+}
+
+
+function fix_fstab() {
   if test 'set' = "${fstab_root_device:+set}"; then
     output "Fixing root line in /etc/fstab."
     if awk '/^[^#]/ {print $2}' "${target_mount_point}"/etc/fstab | grep -q '^/$'; then
@@ -20,14 +32,20 @@ function configure_os() {
       '<<<' '"LABEL=${big_partition_label} ${big_partition_mount_point} ${big_partition_filesystem} defaults,noatime,nodiratime 0 2"' ">&${debug_level_file_contents}" \
       || fail "Failed to write big partition line to /etc/fstab"
   fi
+}
 
+
+function fix_logging() {
   if test "set" = "${log_to_disk:+set}"; then
     # log2ram is probably good for sd card life.
     output "Disabling log2ram."
     eval sudo sed -i "'"'s/^ENABLED=.*$/ENABLED=false/'"'" '"${target_mount_point}/etc/default/armbian-ramlog"' ">&${debug_level_command_output}" \
       || fail "Failed to disabled log2ram."
   fi
+}
 
+
+function fix_passwd() {
   write_root_password_hash
 
   output "Deleting password hash for pi."
@@ -37,7 +55,10 @@ function configure_os() {
   output "Disabling password authentication for pi."
   eval sudo sed -Ei "'s/^pi:[^:]*:(.*)\$/pi:*:\\1\\/home\\/pi:\\/bin\\/bash/'" '"${target_mount_point}/etc/passwd"' ">&${debug_level_command_output}" \
     || fail "Failed to disable password authentication for pi."
+}
 
+
+function nuke_files() {
   for dir in "${create_directories[@]}"; do
     output "Creating directory:  ${target_mount_point}/${dir}"
     eval sudo mkdir -p '"${target_mount_point}/${dir}"' ">&${debug_level_command_output}"
@@ -58,7 +79,21 @@ function configure_os() {
       output "No such directory.  Skipping:  '${file}'"
     fi
   done
+}
 
+
+function fix_default_target() {
+  if test 'set' = "${systemd_default_target:+set}"; then
+    output "Fixing default.target."
+    eval sudo rm -f '"${target_mount_point}/etc/systemd/system/default.target"' ">&${debug_level_command_output}" \
+      || fail "Failed to remove:  /etc/systemd/system/default.target"
+    eval sudo ln -s '"${systemd_default_target}"' '"${target_mount_point}/etc/systemd/system/default.target"' ">&${debug_level_command_output}" \
+      || fail "Failed to create link:  /etc/systemd/system/default.target -> ${systemd_default_target}"
+  fi
+}
+
+
+function fix_network() {
   output "Reading WPA PSK from pass."
   wpa_psk=$(pass show aaron/network/"${network_name}"/wpa_psk) \
     || fail "Failed to read WPA PSK from pass."
@@ -81,7 +116,10 @@ function configure_os() {
       ">&${debug_level_file_contents}" \
       || fail "Failed to disable preditable network interface naming in:  /boot/armbianEnv.txt"
   fi
+}
 
+
+function fix_ssh() {
   template sshd_config /etc/ssh/sshd_config
 
   output "Writing ssh service file."
@@ -117,7 +155,10 @@ function configure_os() {
     '<' /home/aaron/.ssh/public \
     ">&${debug_level_file_contents}" \
     || fail "Failed to install authorized key."
+}
 
+
+function fix_rc_local() {
   template rc_local_conf /etc/rc.local
 
   if test "yes" = "${kick_wifi}"; then
@@ -140,4 +181,3 @@ function configure_os() {
       ">&${debug_level_file_contents}" \
     || fail "Failed to write 'exit 0' line to:  /etc/rc.local"
 }
-
