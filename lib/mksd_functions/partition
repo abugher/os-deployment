@@ -35,10 +35,8 @@ function create_big_partition() {
     return 0
   fi
 
-  if ! test -b "${big_partition}"; then
-    output "DEBUG:  $(ls -l "${big_partition}")"
-    fail "Big partition device file (${big_partition}) is not a block device.  (1)"
-  fi
+  # Sometimes the device file disappears for a moment after being zeroed.
+  wait_for_device "${big_partition}"
 
   output "Writing filesystem to big partition:  ${big_partition}"
   case "${big_partition_filesystem}" in
@@ -55,19 +53,8 @@ function create_big_partition() {
       ;;
   esac
 
-  if ! test -b "${big_partition}"; then
-    output "DEBUG:  $(ls -l "${big_partition}")"
-    fail "Big partition device file (${big_partition}) is not a block device.  (2)"
-  fi
-
   eval sudo mkfs.'"${big_partition_filesystem}"' '"${force_flag}"' '"${label_flag}"' '"${big_partition_label}"' '"${big_partition}"' ">&${debug_level_command_output}" \
     || fail "Failed to write filesystem to big partition."
-
-
-  if ! test -b "${big_partition}"; then
-    output "DEBUG:  $(ls -l "${big_partition}")"
-    fail "Big partition device file (${big_partition}) is not a block device.  (3)"
-  fi
 }
 
 
