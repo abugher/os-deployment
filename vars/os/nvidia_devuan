@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# ~/code/jetson-nano-image
 image_name='nvidia_devuan.img'
 root_partition_index='1'
 fix_gpt='yes'

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# https://developer.nvidia.com/jetson-nano-sd-card-image
 image_name='nvidia_ubuntu_stock.img'
 root_partition_index='1'
 # Default root is 13GB and comes stuffed full.

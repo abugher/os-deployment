@@ -1,7 +1,7 @@
 #!/bin/bash
 
 hardware=jetson_nano
-os=nvidia_ubuntu_stock
+os=nvidia_debian
 #big_partition_label=home
 #big_partition_mount_point=/home
 active_interface_type=wireless
