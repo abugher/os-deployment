@@ -21,9 +21,6 @@ if test "${root_partition_end_original_bytes}" -gt "${root_partition_end_minimum
 else
   root_partition_end_bytes="${root_partition_end_minimum_bytes}"
 fi
-output "DEBUG:  root_partition_end_original_bytes=${root_partition_end_original_bytes}"
-output "DEBUG:  root_partition_end_minimum_bytes=${root_partition_end_minimum_bytes}"
-output "DEBUG:  root_partition_end_bytes=${root_partition_end_bytes}"
 
 root_partition_end="${root_partition_end_bytes}B"
 

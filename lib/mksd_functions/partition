@@ -92,7 +92,7 @@ function remove_partitions() {
     index="$(sed 's/^[^0-9]*//g' <<< "${partition_device}")"
     if test '' = "${index}"; then continue; fi
     if test -f "${card_device}${index}"; then
-      output "DEBUG:  $(ls -l "${card_device}${index}")"
+      output "$(ls -l "${card_device}${index}")"
       fail "Regular file at device file location:  ${card_device}${index}"
     fi
     output "Removing partition ${index}."

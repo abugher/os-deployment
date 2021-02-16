@@ -147,6 +147,8 @@ function fix_ssh() {
     || fail "Failed to write SSH host key (public)."
 
   output "Installing authorized key."
+  eval sudo mkdir -p '"${target_mount_point}/root/.ssh"' \
+    || fail "Failed to create directory for authorized key."
   eval sudo tee '"${target_mount_point}/root/.ssh/authorized_keys"' \
     '<' /home/aaron/.ssh/public \
     ">&${debug_level_file_contents}" \
