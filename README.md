@@ -35,5 +35,5 @@ Right now there are three related lists used to mask systemd services:
 * Directories to create.
 * Files to symlink to /dev/null.
 Two problems, here.
-1.  The code should be changed to automatically remove files destined for null-linking, so that the remove and symlink lists can be deduplicated.
+1.  ~~The code should be changed to automatically remove files destined for null-linking, so that the remove and symlink lists can be deduplicated.~~
 2.  These lists should be broken down and distributed to the appropriate platform-specific vars files, instead of assuming they all need to be handled all the time. 

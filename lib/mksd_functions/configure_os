@@ -5,7 +5,7 @@ function configure_os() {
   fix_fstab
   fix_logging
   fix_passwd
-  nuke_files
+  fix_files
   fix_default_target
   fix_network
   fix_ssh
@@ -58,26 +58,22 @@ function fix_passwd() {
 }
 
 
-function nuke_files() {
-  for dir in "${create_directories[@]}"; do
-    output "Creating directory:  ${target_mount_point}/${dir}"
-    eval sudo mkdir -p '"${target_mount_point}/${dir}"' ">&${debug_level_command_output}"
-  done
-
-  for file in "${remove_files[@]}"; do 
+function fix_files() {
+  for file in "${remove_files[@]}" "${null_link_files[@]}"; do 
     output "Removing:  ${file}"
     eval sudo rm -f '"${target_mount_point}/${file}"' ">&${debug_level_command_output}" \
       || fail "Failed to remove:  ${file}"
   done
 
   for file in "${null_link_files[@]}"; do
-    if test -d "${target_mount_point}/${file%/*}"; then
-      output "Replacing file with symlink to /dev/null:  '${file}'"
-      eval sudo ln -s /dev/null '"${target_mount_point}/${file}"' ">&${debug_level_command_output}" \
-        || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
-    else
-      output "No such directory.  Skipping:  '${file}'"
+    dir="${target_mount_point}/${file%/*}"
+    if ! test -d "${dir}"; then
+      output "Creating directory:  ${dir}"
+      eval sudo mkdir -p '"${dir}"' ">&${debug_level_command_output}"
     fi
+    output "Replacing file with symlink to /dev/null:  '${file}'"
+    eval sudo ln -s /dev/null '"${target_mount_point}/${file}"' ">&${debug_level_command_output}" \
+      || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
   done
 }
 
