@@ -7,3 +7,20 @@ big_partition_index=3
 # Needed for first boot only.  Conditional logic should keep this from making
 # trouble after that.
 kick_wifi='yes'
+
+remove_files+=(
+  '/boot/cmdline.txt'
+  '/etc/init.d/resize2fs_once'
+  '/etc/rc3.d/S01resize2fs_once'
+  '/usr/bin/raspi-config'
+  '/usr/local/bin/raspi-config'
+)
+
+null_link_files+=(
+  '/etc/systemd/system/default.target.wants/raspberrypi-net-mods.service'
+  '/etc/systemd/system/default.target.wants/regenerate_ssh_host_keys.service'
+  '/lib/systemd/system/apply_noobs_os_config.service'
+  '/lib/systemd/system/raspberrypi-net-mods.service'
+  '/lib/systemd/system/regenerate_ssh_host_keys.service'
+  '/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/regenerate_ssh_host_keys.service'
+)

@@ -2,3 +2,17 @@
 
 image_name=armbian.img
 disable_predictable_ifnames_for_armbian=y
+
+remove_files+=(
+  '/etc/profile.d/armbian-check-first-login-reboot.sh'
+  '/etc/profile.d/armbian-check-first-login.sh'
+)
+
+null_link_files+=(
+  '/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service'
+  '/lib/systemd/system/armbian-firstrun-config.service'
+  '/lib/systemd/system/armbian-firstrun.service'
+  '/lib/systemd/system/armbian-resize-filesystem.service'
+  '/usr/lib/armbian/armbian-firstrun'
+  '/usr/lib/armbian/armbian-firstrun-config'
+)
