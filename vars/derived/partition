@@ -14,7 +14,7 @@ root_partition_end_original_bytes="$(
     | sed 's/[^0-9]//g'
 )"
 
-root_partition_end_minimum_bytes="$(( root_partition_end_minimum_g * GiB ))"
+root_partition_end_minimum_bytes="$(( root_partition_end_minimum_g * GiB - 1 ))"
 
 if test "${root_partition_end_original_bytes}" -gt "${root_partition_end_minimum_bytes}"; then
   root_partition_end_bytes="${root_partition_end_original_bytes}"
@@ -26,11 +26,11 @@ root_partition_end="${root_partition_end_bytes}B"
 
 big_partition_start_bytes="$(( root_partition_end_bytes + 1 * bs ))"
 big_partition_start="${big_partition_start_bytes}B"
-big_partition_end="$(
+big_partition_end_max_bytes="$(
   sudo parted "${card_device}" unit B print free \
     | tail -n 2 \
     | head -n 1 \
-    | awk '{print $3}'
+    | awk '{print $3}' \
+    | sed 's/B$//'
 )"
-
-
+big_partition_end="$(( ( big_partition_end_max_bytes / bs ) * bs - 1 ))B"
