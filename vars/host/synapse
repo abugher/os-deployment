@@ -1,8 +1,4 @@
 #!/bin/bash
 
-#hardware=raspberry_pi
-#os=raspios
 hardware='banana_pi_m2'
 os='armbian'
-big_partition_label='home'
-big_partition_mount_point='/home'

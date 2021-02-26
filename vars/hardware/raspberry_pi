@@ -1,4 +1,4 @@
 #!/bin/bash
 
-image_path='~/images/raspberry_pi'
+image_path=~'/images/raspberry_pi'
 
