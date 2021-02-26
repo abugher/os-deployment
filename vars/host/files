@@ -1,4 +1,4 @@
 #!/bin/bash
 
-hardware=odroid_hc1
-os=armbian
+hardware='odroid_hc1'
+os='armbian'

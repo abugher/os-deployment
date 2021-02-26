@@ -1,8 +1,8 @@
 #!/bin/bash
 
-hardware=jetson_nano
+hardware='jetson_nano'
 # nvidia_debian almost works.  Only one sound card gets picked up, compared to
 # two for nvidia_ubuntu_stock.  No HDMI sound output is available.
 #os=nvidia_debian
-os=nvidia_ubuntu_stock
-active_interface_type=wireless
+os='nvidia_ubuntu_stock'
+active_interface_type='wireless'

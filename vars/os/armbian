@@ -1,7 +1,7 @@
 #!/bin/bash
 
-image_name=armbian.img
-disable_predictable_ifnames_for_armbian=y
+image_name='armbian.img'
+disable_predictable_ifnames_for_armbian='y'
 
 remove_files+=(
   '/etc/profile.d/armbian-check-first-login-reboot.sh'
