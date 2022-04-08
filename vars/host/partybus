@@ -3,4 +3,3 @@
 hardware='raspberry_pi'
 os='raspios'
 active_interface_type='wireless'
-card_device='/dev/sdb'

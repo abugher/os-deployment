@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#card_device='/dev/sdb'
 card_device='/dev/sdc'
 
 target_mount_point='/mnt/card'

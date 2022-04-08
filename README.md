@@ -18,11 +18,13 @@ Deploy an OS to a USB storage device by running debootstrap then making modifica
 
 ## mksd
 
-| COMMAND     | PACKAGE |
-| :------     | :------ |
-| openssl     | openssl |
-| mkpasswd    | whois   |
-| pv          | pv      |
+| COMMAND     | PACKAGE     |
+| :------     | :------     |
+| openssl     | openssl     |
+| mkpasswd    | whois       |
+| pv          | pv          |
+| mkfs.f2fs   | f2fs-tools  |
+| mkfs.ext4   | e2fsprogs   |
 
 
 # Bugs:
