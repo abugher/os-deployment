@@ -6,6 +6,8 @@ disable_predictable_ifnames_for_armbian='y'
 remove_files+=(
   '/etc/profile.d/armbian-check-first-login-reboot.sh'
   '/etc/profile.d/armbian-check-first-login.sh'
+  '/root/.not_logged_in_yet'
+
 )
 
 null_link_files+=(
