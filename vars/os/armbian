@@ -12,9 +12,10 @@ remove_files+=(
 
 null_link_files+=(
   '/etc/systemd/system/multi-user.target.wants/armbian-firstrun-config.service'
+  '/lib/armbian/armbian-firstrun'
+  '/lib/armbian/armbian-firstrun-config'
   '/lib/systemd/system/armbian-firstrun-config.service'
   '/lib/systemd/system/armbian-firstrun.service'
   '/lib/systemd/system/armbian-resize-filesystem.service'
-  '/usr/lib/armbian/armbian-firstrun'
-  '/usr/lib/armbian/armbian-firstrun-config'
+  '/lib/systemd/system/sockets.target'
 )
