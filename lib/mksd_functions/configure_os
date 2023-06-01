@@ -129,7 +129,7 @@ function fix_ssh() {
   eval sudo chmod 0600 '"${target_mount_point}/etc/ssh/ssh_host_rsa_key"' ">&${debug_level_command_output}" \
     || fail "Failed to set permissions on SSH host key (private)."
 
-  host_key_priv_file="../sensitive_ansible/inventory/hosts/${host}/files/ssh_keys/ssh_host_rsa_key"
+  host_key_priv_file="../sensitive-ansible/inventory/hosts/${host}/files/ssh_keys/ssh_host_rsa_key"
   output "Writing SSH host key (private)."
   test -e "${host_key_priv_file}" \
     || fail "SSH host key (private) is missing."
