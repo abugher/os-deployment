@@ -45,3 +45,5 @@ alternative approach.  Make sure the script can target a loop device, then
 write a wrapper that just does that, and call that an image generation
 mechanism.  Writing images to disks doesn't need scripting.
 
+mkbs should acquire a lock on the target device, and refuse to operate
+concurrently on the same target.
