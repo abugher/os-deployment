@@ -11,7 +11,11 @@ function rescan_storage() {
 
 
 function wait_for_device() {
-  device="${1}"
+  local device="${1}"
+
+  # Give it a moment to disappear before waiting for it to come back.
+  sleep 2
+
   output "Waiting for device:  ${device}"
   for i in {0..99}; do
     if test -b "${device}"; then

@@ -10,7 +10,7 @@ function extend_sources() {
 
 
 function install_networking_packages() {
-  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install wireless-tools wpasupplicant ifupdown firmware-linux-free firmware-linux-nonfree firmware-iwlwifi firmware-atheros firmware-realtek firmware-brcm80211 firmware-libertas firmware-ralink firmware-ti-connectivity firmware-zd1211' \
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install wireless-tools wpasupplicant ifupdown firmware-linux-free firmware-linux-nonfree firmware-iwlwifi firmware-ath9k-htc firmware-realtek firmware-brcm80211 firmware-libertas firmware-ralink firmware-ti-connectivity firmware-zd1211' \
     || fail "Failed to install network tools and firmware packages."
   # firmware-ipw2x00 
 }

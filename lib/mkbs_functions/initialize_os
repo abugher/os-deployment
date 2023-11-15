@@ -4,6 +4,6 @@
 function initialize_os() {
    mkdir -p "${HOME}"/tmp/debootstrap_cache \
     || fail "Failed to create cache directory."
-  sudo debootstrap --cache-dir "${HOME}"/tmp/debootstrap_cache --arch=amd64 stable "${target_mount_point}"/ \
+  sudo debootstrap --cache-dir "${HOME}"/tmp/debootstrap_cache --arch=amd64 chimaera "${target_mount_point}"/ \
     || fail "Failed to write OS."
 }

@@ -12,8 +12,13 @@ function partition() {
     || fail "Failed to create ESP."
   sudo parted -s "${device}" set 2 esp on \
     || fail "Failed to set esp flag."
-  # Apparently parted will return after writing a partition, but before the new
-  # partition is visible as a device file.
+  # Apparent order of operations:
+  #   parted writes partition
+  #   parted returns
+  #   old partition disappears
+  #   new partition appears
+  # Sleep to allow the old partition to disappear, THEN wait for the new partition to appear.
+  sleep 1
   wait_for_device "${device}2"
   sudo mkfs.vfat "${device}2" \
     || fail "Failed to write FS to ESP."
