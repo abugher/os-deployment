@@ -19,19 +19,19 @@ function partition() {
   #   new partition appears
   # Sleep to allow the old partition to disappear, THEN wait for the new partition to appear.
   sleep 1
-  wait_for_device "${device}2"
-  sudo mkfs.vfat "${device}2" \
+  wait_for_device "${efi}"
+  sudo mkfs.vfat "${efi}" \
     || fail "Failed to write FS to ESP."
   sudo parted -s "${device}" mkpart primary ext4 256MiB 512MiB \
     || fail "Failed to create boot partition."
-  wait_for_device "${device}3"
-  sudo mkfs.ext4 -F -L "${host}"_boot "${device}"3 \
+  wait_for_device "${boot}"
+  sudo mkfs.ext4 -F -L "${host}"_boot "${boot}" \
     || fail "Failed to write FS to boot partition."
-  sudo tune2fs -i 0 -c 0 "${device}"3 \
+  sudo tune2fs -i 0 -c 0 "${boot}" \
     || fail "Failed to tune FS parameters for boot partition."
   sudo parted -s "${device}" mkpart primary ext4 512MiB 100% \
     || fail "Failed to create root partition."
-  wait_for_device "${device}4"
+  wait_for_device "${pv}"
   # Are you sure you want to blow away this partition?  YES
   {
     echo -n $(
@@ -39,7 +39,7 @@ function partition() {
         || fail "Failed to retrieve password for LUKS."
     )
   } \
-  | sudo cryptsetup luksFormat --key-file - "${device}"4 \
+  | sudo cryptsetup luksFormat --key-file - "${pv}" \
     || fail "Failed to format for LUKS."
   {
     echo -n $(
@@ -47,16 +47,16 @@ function partition() {
         || fail "Failed to retrieve password for LUKS."
     )
   } \
-  | sudo cryptsetup open --key-file - --type luks "${device}"4 "${host}"_crypt \
+  | sudo cryptsetup open --key-file - --type luks "${pv}" "${luks}" \
     || fail "Failed to open LUKS volume."
-  sudo pvcreate /dev/mapper/"${host}"_crypt \
+  sudo pvcreate /dev/mapper/"${luks}" \
     || fail "Failed to create LVM physical volume over LUKS."
-  sudo vgcreate "${host}" /dev/mapper/"${host}"_crypt \
+  sudo vgcreate "${vg}" /dev/mapper/"${luks}" \
     || fail "Failed to create volume group over LUKS."
-  sudo lvcreate -l 100%FREE -n root "${host}" \
+  sudo lvcreate -l 100%FREE -n root "${vg}" \
     || fail "Failed to create logical volume for root."
-  sudo mkfs.ext4 -F -L "${host}"_root /dev/mapper/"${host}"-root \
+  sudo mkfs.ext4 -F -L "${host}"_root /dev/mapper/"${vg}"-root \
     || fail "Failed to write FS to root partition."
-  sudo tune2fs -i 0 -c 0 /dev/mapper/"${host}"-root \
+  sudo tune2fs -i 0 -c 0 /dev/mapper/"${vg}"-root \
     || fail "Failed to tune FS parameters for root partition."
 }

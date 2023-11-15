@@ -10,7 +10,7 @@ Deploy an OS to an SD card by writing an image file to it and then making modifi
 
 ## mkbs
 
-    bin/mkbs <device>
+    bin/mkbs <device> <release>
 
 Deploy an OS to a USB storage device by running debootstrap then making modifications, mostly via chroot.
 
@@ -29,5 +29,19 @@ Deploy an OS to a USB storage device by running debootstrap then making modifica
 
 # Bugs:
 
-I had some fun using file descriptors to establish debugging levels, but the
-way I did it really made most of this code look awful.  I need to get rid of that.
+In mksd code, I had some fun using file descriptors to establish debugging
+levels, but the way I did it really made most of this code look awful.  I need
+to get rid of that.
+
+mkbs is slow.  It completes in like a quarter hour on a fast USB stick.  More
+like a day on a regular USB stick.  It should probably generate an image on
+local storage then write that to the device.  I'm assuming there's some
+redundant I/O during debootstrap and such, but maybe it just really takes that
+long to write all those bits to disk.  I should generate a stick, extract the
+image, write the image back, and compare the operation times, to make sure that
+the imaging approach will actually save time.  That's also an extra layer of
+complexity and fragility, which I might just rather skip, so consider an
+alternative approach.  Make sure the script can target a loop device, then
+write a wrapper that just does that, and call that an image generation
+mechanism.  Writing images to disks doesn't need scripting.
+

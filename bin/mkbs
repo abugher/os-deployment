@@ -23,8 +23,22 @@ else
   fail 'Specify a device.'
 fi
 
+if test 'set' = "${2:+set}"; then
+  release="${2}"
+else
+  fail 'Specify a Devuan release code name.'
+fi
+
 host=bootstick
-target_mount_point=/mnt/"${host}"
+
+efi="${device}"2
+boot="${device}"3
+pv="${device}"4
+luks="${host}_${device##*/}_crypt"
+vg="${host}_${device##*/}"
+
+target_mount_point=/mnt/"${host}_${device##*/}"
+
 
 # Invoke the main function.  Respect the debug level specified in DEBUG_LEVEL.
 # All functions are now free to direct output to file descriptors indexed up to
