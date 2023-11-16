@@ -2,6 +2,10 @@
 
 
 function partition() {
+  sudo sgdisk -Z "${device}" \
+    || fail "Failed to erase all partition table(s)."
+  sudo wipefs -a "${device}" \
+    || fail "Failed to remove all filesystem label(s)."
   sudo parted -s "${device}" mklabel gpt \
     || fail "Failed to write partition table."
   sudo parted -s "${device}" mkpart primary fat32 1MiB 2MiB \

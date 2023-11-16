@@ -47,3 +47,8 @@ mechanism.  Writing images to disks doesn't need scripting.
 
 mkbs should acquire a lock on the target device, and refuse to operate
 concurrently on the same target.
+
+Required packages should be documented.
+
+If it runs long enough, mkbs prompts for root password again.  It is supposed
+to keep it from expiring.
