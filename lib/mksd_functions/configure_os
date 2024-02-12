@@ -150,7 +150,7 @@ function fix_ssh() {
   eval sudo mkdir -p '"${target_mount_point}/root/.ssh"' \
     || fail "Failed to create directory for authorized key."
   eval sudo tee '"${target_mount_point}/root/.ssh/authorized_keys"' \
-    '<' /home/aaron/.ssh/public \
+    '<' "${HOME}/.ssh/id_rsa.pub" \
     ">&${debug_level_file_contents}" \
     || fail "Failed to install authorized key."
 }
