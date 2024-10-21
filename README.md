@@ -26,6 +26,12 @@ Deploy an OS to a USB storage device by running debootstrap then making modifica
 | mkfs.f2fs   | f2fs-tools  |
 | mkfs.ext4   | e2fsprogs   |
 
+## mkbs
+| COMMAND     | PACKAGE     |
+| :------     | :------     |
+| sgdisk      | gdisk       |
+| parted      | parted      |
+| debootstrap | debootstrap |
 
 # Bugs:
 
@@ -48,7 +54,7 @@ mechanism.  Writing images to disks doesn't need scripting.
 mkbs should acquire a lock on the target device, and refuse to operate
 concurrently on the same target.
 
-Required packages should be documented.
+Required packages may not be completely documented.
 
 If it runs long enough, mkbs prompts for root password again.  It is supposed
 to keep it from expiring.

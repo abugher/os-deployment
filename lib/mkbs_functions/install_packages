@@ -2,7 +2,7 @@
 
 
 function extend_sources() {
-  sudo sed -i 's/main$/main contrib non-free/' "${target_mount_point}"/etc/apt/sources.list \
+  sudo sed -i 's/main$/main contrib non-free non-free-firmware/' "${target_mount_point}"/etc/apt/sources.list \
     || fail "Failed to extend sources list." 
   sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y update' \
     || fail "Failed to update apt cache."
