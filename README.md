@@ -1,6 +1,6 @@
 # Usage
 
-This directory should be the current working directory, for relative paths.
+This directory should be the current working directory when launching these scripts, as they may rely on relative paths.  (This is a bug.)
 
 ## mksd
 
@@ -58,3 +58,5 @@ Required packages may not be completely documented.
 
 If it runs long enough, mkbs prompts for root password again.  It is supposed
 to keep it from expiring.
+
+The scripts should work regardless of current working directory.
