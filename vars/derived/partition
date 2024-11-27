@@ -30,7 +30,7 @@ big_partition_end_max_bytes="$(
   sudo parted "${card_device}" unit B print free \
     | tail -n 2 \
     | head -n 1 \
-    | awk '{print $3}' \
+    | awk '{print $2}' \
     | sed 's/B$//'
 )"
 big_partition_end="$(( big_partition_end_max_bytes - 1 ))B"
