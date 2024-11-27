@@ -60,3 +60,8 @@ If it runs long enough, mkbs prompts for root password again.  It is supposed
 to keep it from expiring.
 
 The scripts should work regardless of current working directory.
+
+mksd should generate a new image in a file instead of on a storage device.  It
+might do so only if the upstream image is newer.  It might also still write the
+resulting image to a storage device, skipping the image generation step if
+possible.
