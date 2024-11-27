@@ -33,4 +33,4 @@ big_partition_end_max_bytes="$(
     | awk '{print $3}' \
     | sed 's/B$//'
 )"
-big_partition_end="$(( ( big_partition_end_max_bytes / bs ) * bs - 1 ))B"
+big_partition_end="$(( big_partition_end_max_bytes - 1 ))B"
