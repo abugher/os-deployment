@@ -1,7 +1,10 @@
 #!/bin/bash
 
 function fix_gpt() {
-  output "Fixing GPT."
+  output "Moving GPT backup data structures to end of available storage."
   eval sudo gdisk '"${card_device}"' '<<<' '"$(echo -e "x\ne\nw\nY")"' ">&${debug_level_command_output}" \
-    || fail "Failed to fix GPT."
+    || fail "Failed to fix GPT backup location."
+  output "Fixing GPT coverage of storage device and anything else parted wants to fix."
+  eval sudo parted -sf '"${card_device}"' unit B print free ">&${debug_level_command_output}" \
+    || fail "Failed to fix GPT coverage."
 }
