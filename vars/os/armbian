@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# On Armbian built for Jetson Nano, root is the second partition.  It is
+# unclear whether this is a change in how Armbian works or a peculiarity of
+# building for this board.
+root_partition_index=2
+
+# More special casing for Armbian for Jetson Nano.  Apparently it comes with a
+# messed up GPT label.
+fix_gpt='yes'
+
 image_name='armbian.img'
 disable_predictable_ifnames_for_armbian='y'
 
@@ -7,7 +16,6 @@ remove_files+=(
   '/etc/profile.d/armbian-check-first-login-reboot.sh'
   '/etc/profile.d/armbian-check-first-login.sh'
   '/root/.not_logged_in_yet'
-
 )
 
 null_link_files+=(
