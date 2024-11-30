@@ -7,7 +7,7 @@ read bs < "/sys/block/${card_device##*/}/queue/physical_block_size" || fail "Fai
 #
 # Assumption:  root is the last partition.
 root_partition_end_original_bytes="$(
-  sudo parted "${card_device}" unit B print \
+  sudo parted -s "${card_device}" unit B print \
     | tail -n 2 \
     | head -n 1 \
     | awk '{print $3}' \
@@ -27,10 +27,11 @@ root_partition_end="${root_partition_end_bytes}B"
 big_partition_start_bytes="$(( root_partition_end_bytes + 1 * bs ))"
 big_partition_start="${big_partition_start_bytes}B"
 big_partition_end_max_bytes="$(
-  sudo parted "${card_device}" unit B print free \
+  sudo parted -s "${card_device}" unit B print free \
     | tail -n 2 \
     | head -n 1 \
     | awk '{print $2}' \
     | sed 's/B$//'
 )"
-big_partition_end="$(( big_partition_end_max_bytes - 1 ))B"
+# The redundant looking (integer) math is important.
+big_partition_end="$(( ( big_partition_end_max_bytes / bs ) * bs - 1 ))B"
