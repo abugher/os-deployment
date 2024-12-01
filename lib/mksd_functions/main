@@ -12,7 +12,8 @@ function main() {
   unmount_prep
   safety_net "${card_device}"
 
-  #zero_out
+  # Probably overkill.  Takes a long time.
+  zero_out
   remove_partitions
   write_image
 
@@ -20,6 +21,8 @@ function main() {
     echo "ERROR:  Failed to source:  vars/derived/partition" >&2
     exit 1
   fi
+
+  verify_image
 
   resize_root_partition
   create_big_partition

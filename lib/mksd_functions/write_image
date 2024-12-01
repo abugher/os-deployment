@@ -21,6 +21,24 @@ function write_image() {
 }
 
 
+verify_image() {
+  image_size_bytes="$(stat -c '%s' "${image_file}")"
+  if ! test 0 = "$(( image_size % bs ))"; then
+    warn "Image size (${image_size_bytes} bytes) does not align to block size (${bs} bytes)."
+    # The last fraction of a block may not be verified.
+  fi
+  image_size_blocks="$(( image_size / bs ))"
+  output "Getting image checksum."
+  image_sum="$(dd bs="${bs}" count="${image_size_blocks}" if="${image}" | pv | sha256sum | awk '{print $1}')"
+  output "Getting card device checksum."
+  card_sum="$(sudo dd bs="${bs}" count="${image_size_blocks}" if="${card_device}" | pv | sha256sum | awk '{print $1}')"
+  output "Comparing checksums."
+  if ! test "${image_sum}" == "${card_sum}"; then
+    fail "Checksums do not match - image:  '${image_sum}';  card:  '${card_sum}'"
+  fi
+}
+
+
 function zero_out() {
   output "Zeroing out storage device."
   eval dd if=/dev/zero bs=1M status=none \| pv "2>&${debug_level_command_output}" \| sudo dd bs=1M of='"${card_device}"' status=none ">&${debug_level_command_output}"
