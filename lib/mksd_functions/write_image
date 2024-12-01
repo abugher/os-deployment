@@ -19,3 +19,17 @@ function write_image() {
     fix_gpt
   fi
 }
+
+
+function zero_out() {
+  output "Zeroing out storage device."
+  eval dd if=/dev/zero bs=1M status=none \| pv "2>&${debug_level_command_output}" \| sudo dd bs=1M of='"${card_device}"' status=none ">&${debug_level_command_output}"
+  ret="${?}"
+  if ! test "1" == "${ret}"; then
+    # No exit codes are documented other than zero and non-zero.  Attempting to
+    # write more than a device can hold (infinite zeroes) was observed to yield
+    # a return code of 1.  That may change.  Other failure conditions may or
+    # may not produce different exit codes.
+    fail "Zeroing out storage device - dd returned unexpected exit code:  '${ret}'"
+  fi
+}

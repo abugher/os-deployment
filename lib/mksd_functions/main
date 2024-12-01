@@ -12,6 +12,7 @@ function main() {
   unmount_prep
   safety_net "${card_device}"
 
+  #zero_out
   remove_partitions
   write_image
 
