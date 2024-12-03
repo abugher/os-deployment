@@ -8,5 +8,5 @@
 hardware='jetson_nano'
 #os='nvidia_debian'
 #os='nvidia_ubuntu'
-os='armbian'
+os='nvidia_ubuntu'
 active_interface_type='wireless'
