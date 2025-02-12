@@ -3,9 +3,8 @@
 # On Armbian built for Jetson Nano, root is the second partition.  It is
 # unclear whether this is a change in how Armbian works or a peculiarity of
 # building for this board.
-boot_partition_index=1
-root_partition_index=2
-big_partition_index=3
+root_partition_index=1
+big_partition_index=2
 
 # More special casing for Armbian for Jetson Nano.  Apparently it comes with a
 # messed up GPT label.
