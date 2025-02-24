@@ -24,6 +24,7 @@ function main() {
 
   verify_image
 
+  fix_image
   resize_root_partition
   create_big_partition
 

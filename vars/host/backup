@@ -2,3 +2,4 @@
 
 hardware='odroid_hc1'
 os='armbian'
+log_to_disk='yes'

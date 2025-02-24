@@ -13,6 +13,10 @@ function write_image() {
     || fail "Device file not found:  '${card_device}'"
   eval dd if='"${image}"' bs=1M status=none \| pv "2>&${debug_level_command_output}" \| sudo dd bs=1M of='"${card_device}"' status=none ">&${debug_level_command_output}" \
     || fail "Failed to write image."
+}
+
+
+function fix_image() {
   eval sudo tune2fs -i 0 -c 0 '"${root_partition}"' ">&${debug_level_command_output}" \
     || fail "Failed to tune root filesystem."
   if test 'set' = "${fix_gpt+set}"; then
@@ -22,16 +26,35 @@ function write_image() {
 
 
 verify_image() {
-  image_size_bytes="$(stat -c '%s' "${image_file}")"
+  if ! grep -q '[0-9]' <<< "${bs}"; then
+    fail "Block size not set."
+  fi
+  image_size_bytes="$(
+    stat -c '%s' "$(
+      realpath "${image}"
+    )"
+  )"
+  if ! grep -q '[0-9]' <<< "${image_size_bytes}"; then
+    fail "Failed to obtain size of image."
+  fi
   if ! test 0 = "$(( image_size % bs ))"; then
     warn "Image size (${image_size_bytes} bytes) does not align to block size (${bs} bytes)."
     # The last fraction of a block may not be verified.
   fi
-  image_size_blocks="$(( image_size / bs ))"
+  image_size_blocks="$(( image_size_bytes / bs ))"
   output "Getting image checksum."
+  echo "DEBUG:  bs='${bs}'"
+  echo "DEBUG:  image_size_blocks='${image_size_blocks}'"
+  echo "DEBUG:  image_size_bytes='${image_size_bytes}'"
   image_sum="$(dd bs="${bs}" count="${image_size_blocks}" if="${image}" | pv | sha256sum | awk '{print $1}')"
+  if ! grep -q '[0-9]' <<< "${image_sum}"; then
+    fail "Failed to obtain checksum of image."
+  fi
   output "Getting card device checksum."
   card_sum="$(sudo dd bs="${bs}" count="${image_size_blocks}" if="${card_device}" | pv | sha256sum | awk '{print $1}')"
+  if ! grep -q '[0-9]' <<< "${card_sum}"; then
+    fail "Failed to obtain checksum of card device."
+  fi
   output "Comparing checksums."
   if ! test "${image_sum}" == "${card_sum}"; then
     fail "Checksums do not match - image:  '${image_sum}';  card:  '${card_sum}'"

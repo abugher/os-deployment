@@ -72,7 +72,7 @@ function fix_files() {
       eval sudo mkdir -p '"${dir}"' ">&${debug_level_command_output}"
     fi
     output "Replacing file with symlink to /dev/null:  '${file}'"
-    eval sudo ln -s /dev/null '"${target_mount_point}/${file}"' ">&${debug_level_command_output}" \
+    eval sudo ln -sf /dev/null '"${target_mount_point}/${file}"' ">&${debug_level_command_output}" \
       || fail "Failed to replace file with symlink to /dev/null:  '${file}'"
   done
 }
@@ -83,7 +83,7 @@ function fix_default_target() {
     output "Fixing default.target."
     eval sudo rm -f '"${target_mount_point}/etc/systemd/system/default.target"' ">&${debug_level_command_output}" \
       || fail "Failed to remove:  /etc/systemd/system/default.target"
-    eval sudo ln -s '"${systemd_default_target}"' '"${target_mount_point}/etc/systemd/system/default.target"' ">&${debug_level_command_output}" \
+    eval sudo ln -sf '"${systemd_default_target}"' '"${target_mount_point}/etc/systemd/system/default.target"' ">&${debug_level_command_output}" \
       || fail "Failed to create link:  /etc/systemd/system/default.target -> ${systemd_default_target}"
   fi
 }
@@ -119,7 +119,7 @@ function fix_ssh() {
   template sshd_config /etc/ssh/sshd_config
 
   output "Writing ssh service file."
-  eval sudo ln -s /lib/systemd/system/ssh.service '"${target_mount_point}/etc/systemd/system/default.target.wants/ssh.service"' ">&${debug_level_command_output}" \
+  eval sudo ln -sf /lib/systemd/system/ssh.service '"${target_mount_point}/etc/systemd/system/default.target.wants/ssh.service"' ">&${debug_level_command_output}" \
     || fail "Failed to write ssh service file."
 
   output "Initializing SSH host key (private)."

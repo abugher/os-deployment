@@ -1,6 +1,16 @@
 #!/bin/bash
 
 function fix_gpt() {
+  partition_table_type="$(
+    sudo parted "${card_device}" print \
+      | awk '/^Partition Table:/ {print $3}'
+  )"
+
+  if ! test "gpt" = "${partition_table_type}"; then
+    warn "Non-GPT partition table detected.  Type:  '${partition_table_type}'"
+    return 0
+  fi
+
   output "Moving GPT backup data structures to end of available storage."
   eval sudo gdisk '"${card_device}"' '<<<' '"$(echo -e "x\ne\nw\nY")"' ">&${debug_level_command_output}" \
     || fail "Failed to fix GPT backup location."

@@ -3,7 +3,7 @@
 
 max_debug_level=10
 if ! grep -Eq '^[0-9]+$' <<< "${DEBUG_LEVEL}"; then
-  DEBUG_LEVEL=2
+  DEBUG_LEVEL=3
 fi
 if test "${DEBUG_LEVEL}" -gt "${max_debug_level}"; then
   DEBUG_LEVEL="${max_debug_level}"

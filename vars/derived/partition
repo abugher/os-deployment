@@ -16,6 +16,10 @@ root_partition_end_original_bytes="$(
 
 root_partition_end_minimum_bytes="$(( root_partition_end_minimum_g * GiB - 1 ))"
 
+echo "DEBUG:  root_partition_end_original_bytes='${root_partition_end_original_bytes}'"
+echo "DEBUG:  root_partition_end_minimum_bytes='${root_partition_end_minimum_bytes}'"
+echo "DEBUG:  root_partition_end_minimum_g='${root_partition_end_minimum_g}'"
+
 if test "${root_partition_end_original_bytes}" -gt "${root_partition_end_minimum_bytes}"; then
   root_partition_end_bytes="${root_partition_end_original_bytes}"
 else
