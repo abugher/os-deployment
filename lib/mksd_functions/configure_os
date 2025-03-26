@@ -110,7 +110,7 @@ function fix_network() {
     eval sudo tee -a '"${target_mount_point}/boot/armbianEnv.txt"' \
       '<<<' "'extraargs=net.ifnames=0 biosdevname=0'" \
       ">&${debug_level_file_contents}" \
-      || fail "Failed to disable preditable network interface naming in:  /boot/armbianEnv.txt"
+      || fail "Failed to disable predictable network interface naming in:  /boot/armbianEnv.txt"
   fi
 }
 

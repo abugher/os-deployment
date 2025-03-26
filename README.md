@@ -35,9 +35,13 @@ Deploy an OS to a USB storage device by running debootstrap then making modifica
 
 # Bugs:
 
+##
+
 In mksd code, I had some fun using file descriptors to establish debugging
 levels, but the way I did it really made most of this code look awful.  I need
 to get rid of that.
+
+##
 
 mkbs is slow.  It completes in like a quarter hour on a fast USB stick.  More
 like a day on a regular USB stick.  It should probably generate an image on
@@ -51,17 +55,34 @@ alternative approach.  Make sure the script can target a loop device, then
 write a wrapper that just does that, and call that an image generation
 mechanism.  Writing images to disks doesn't need scripting.
 
+##
+
 mkbs should acquire a lock on the target device, and refuse to operate
 concurrently on the same target.
 
+##
+
 Required packages may not be completely documented.
+
+##
 
 If it runs long enough, mkbs prompts for root password again.  It is supposed
 to keep it from expiring.
 
+##
+
 The scripts should work regardless of current working directory.
+
+## 
 
 mksd should generate a new image in a file instead of on a storage device.  It
 might do so only if the upstream image is newer.  It might also still write the
 resulting image to a storage device, skipping the image generation step if
 possible.
+
+##
+
+Network configuration assumes ifupdown.  Netplan is becoming default on
+Armbian.  Unconfigured netplan will use DHCP.  That works as long as the MAC
+address is already known to the DHCP server, but otherwise means a fresh
+deployed host will come up with a wrong IP address.
