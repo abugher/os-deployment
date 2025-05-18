@@ -13,7 +13,7 @@ function main() {
   safety_net "${card_device}"
 
   # Probably overkill.  Takes a long time.
-  zero_out
+  #zero_out
   remove_partitions
   write_image
 

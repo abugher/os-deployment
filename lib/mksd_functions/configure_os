@@ -159,6 +159,10 @@ function fix_ssh() {
 function fix_rc_local() {
   template rc_local_conf /etc/rc.local
 
+  output "Setting permissions (0755) on rc.local."
+  eval sudo chmod 0755 '"${target_mount_point}/etc/rc.local"' ">&${debug_level_command_output}" \
+    || fail "Failed to chmod 0755 rc.local."
+
   if test "yes" = "${kick_wifi}"; then
     template kick_wifi_conf /usr/local/bin/kick_wifi
 
