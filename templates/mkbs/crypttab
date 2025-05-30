@@ -1,1 +1,1 @@
-${luks} ${pv} none luks
+${luks} ${pv_by_uuid} none luks

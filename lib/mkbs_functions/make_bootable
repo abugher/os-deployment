@@ -2,6 +2,10 @@
 
 
 function make_bootable() {
+  pv_by_uuid="/dev/disk/by-uuid/$(ls -l /dev/disk/by-uuid/ | awk "/\/${pv##*/}\$/"' {print $9}')"
+  if ! test "set" = "${pv_by_uuid:+set}"; then
+    fail "Failed to find UUID for physical volume."
+  fi
   sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install linux-image-amd64' \
     || fail "Failed to install kernel package."
   sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install grub-pc' \

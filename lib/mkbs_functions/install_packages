@@ -17,7 +17,7 @@ function install_networking_packages() {
 
 
 function install_storage_packages() {
-  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install cryptsetup lvm2' \
+  sudo chroot "${target_mount_point}" /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -y install cryptsetup cryptsetup-initramfs lvm2' \
     || fail "Failed to install advanced partitioning tools."
 }
 
