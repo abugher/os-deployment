@@ -1,0 +1,16 @@
+# https://wiki.debian.org/DebianInstaller/Preseed
+# https://www.debian.org/releases/bookworm/example-preseed.txt
+# https://preseed.debian.net/debian-preseed/bookworm/amd64-main-full.txt
+# debconf-show <package>
+# https://thornelabs.net/posts/debian-ubuntu-preseed-documentation-and-working-examples/
+
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/debconf_module.html#notes
+
+# Opposite day:  A value of "false" for openssh-server/permit-root-login yields
+# a value of "yes" for PermitRootLogin in sshd_config.
+
+# debconf settings for openssh-server are ignored at package installation unless early_command and
+# late_command include an override.
+
+# Only one late_command line is allowed.  Use semicolons if multiple
+# commands are needed.

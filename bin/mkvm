@@ -1,0 +1,251 @@
+#!/bin/bash
+#
+# mkvm <host>
+
+
+# Pseudo-constant variables that should probably be arguments.
+#arch='armhf'
+arch='amd64'
+os='debian'
+release='bookworm'
+version='12.11.0'
+mem_gb='4'
+mem_mb="$(( mem_gb * 1024 ))"
+vm_image_size='10G'
+control_center=~/control-center
+cpu_core_count=4
+
+
+# Non-configuration pseudo-constant variable(s).
+case "${arch}" in
+  'i386')
+    initrd_path='install.386'
+    ;;
+  'amd64')
+    initrd_path='install.amd'
+    ;;
+  *)
+    fail "Unrecognized architecture:  '${arch}'"
+    ;;
+esac
+
+
+function main() {
+  # Handle arguments.
+  if ! test 1 = "${#}"; then
+    fail "Wrong number of arguments.  Just specify a short hostname."
+  fi
+  host="${1}"
+  port="$(awk '/ssh_unique_port/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${host}".yml | sed "s/['\"]//g")"
+  if ! grep -qE '^[0-9]+$' <<< "${port}"; then
+    fail "Invalid port number:  '${port}'"
+  fi
+
+  # Pseudo-constant variables that should perhaps be overrideable by environment variables.
+  # Some of these are dependent on argument handling.
+  # This one should almost definitely be set according to execution path.
+  #conf=~/.mkvm/conf
+  conf=~/control-center/os-deployment/conf
+  preseed_dir=~/.mkvm/preseed
+  unpack=~/.mkvm/"installer_unpack_${host}"
+  vm_images=~/.mkvm/vm_images
+  installer_images=~/.mkvm/installer_images
+  vm_image="${vm_images}/${arch}-${os}-${release}-${port}.qcow"
+  installer_image_original="/storage/bittorrent/content/${os}-${version}-${arch}-netinst.iso"
+  installer_image_generated="${installer_images}/preseed-${os}-${version}-${arch}-${port}-netinst.iso"
+
+  # Change directory -- probably not necessary.
+  #bin_path="${0%/*}"
+  #cd "${bin_path}" || fail "Failed to change directory to executable path:  '${bin_path}'"
+  #cd .. || fail "Failed to changed directory above executable path."
+
+  # Maybe this script should do different things depending on how it is called.
+  self_name="${0##*/}"
+
+  case "${self_name}" in
+    mkvm)
+      mkvm
+      ;;
+    runvm)
+      runvm
+      ;;
+# This part is broken.
+#    sshvm)
+#      get_shell
+#      ;;
+    dummy)
+      test_dummy
+      ;;
+    *)
+      fail "I don't know how to be '${self_name}'."
+  esac
+}
+
+
+function test_dummy() {
+  echo "Private key:  ${ssh_host_key_private}"
+  echo "Public key:  ${ssh_host_key_public}"
+}
+
+
+function mkvm() {
+  prepare_directory_structure
+  generate_preseed
+  unpack_image
+  unpack_initrd
+  inject_preseed
+  repack_initrd
+  configure_boot
+  regenerate_checksums
+  repack_image
+  create_target
+  install
+}
+
+
+function runvm() {
+  qemu-system-x86_64 \
+    -nic user,hostfwd=tcp::"${port}"-:22 \
+    -machine pc \
+    -cpu max \
+    -smp cores="${cpu_core_count}" \
+    -m "${mem_mb}" \
+    -hda "${vm_image}" \
+    "${@}" \
+    > /dev/null \
+    < /dev/null
+}
+
+
+function get_shell() {
+  while 
+    ! sshpass \
+      -d 3 \
+      ssh \
+        -p "${port}" \
+        root@localhost \
+        whoami \
+      3< <(pass show aaron/"${host}"/root) \
+      > /dev/null \
+      2>&1
+  do
+    sleep 1
+    echo -n '.'
+  done
+}
+
+
+function prepare_directory_structure() {
+  rm -rf "${preseed_dir}" || fail "Failed to remove preseed directory:  '${preseed_dir}'"
+  mkdir -p "${preseed_dir}" || fail "Failed to create preseed directory:  '${preseed_dir}'"
+  if test -e "${unpack}"; then
+    chmod -R u+rwX "${unpack}" || fail "Failed to prepare installer unpack directory for deletion:  '${unpack}'"
+    rm -rf "${unpack}" || fail "Failed to remove installer unpack directory:  '${unpack}'"
+  fi
+  mkdir -p "${unpack}" || fail "Failed to create installer unpack directory:  '${unpack}'"
+  rm -rf "${vm_images}" || fail "Failed to remove images directory:  '${vm_images}'"
+  mkdir -p "${vm_images}" || fail "Failed to create images directory:  '${vm_images}'"
+  rm -rf "${installer_images}" || fail "Failed to remove images directory:  '${vm_images}'"
+  mkdir -p "${installer_images}" || fail "Failed to create images directory:  '${vm_images}'"
+}
+
+
+function generate_preseed() {
+  # Designate a preseed file.
+  cp "${conf}/${arch}-${os}-${release}.cfg" "${preseed_dir}/preseed.cfg" || fail "Failed to copy preseed file."
+  # Populate sensitive elements of preseed file.
+  sed -i "s/password \$/password $(pass show "aaron/${host}/root")/" "${preseed_dir}/preseed.cfg" || fail "Failed to inject password into preseed file."
+  ssh_host_key_private="$(while read line; do if ! grep -q -- '-----' <<< "${line}"; then printf "%s" "${line}"; fi; done < "${control_center}"/sensitive-ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key)" || fail "Failed to read SSH private key."
+  sed -i "s#ssh_host_key_private#${ssh_host_key_private}#" "${preseed_dir}/preseed.cfg" || fail "Failed to inject SSH private key into preseed file."
+  ssh_host_key_public="$(cat "${control_center}"/ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key.pub)" || fail "Failed to read SSH public key."
+  sed -i "s#ssh_host_key_public#${ssh_host_key_public}#" "${preseed_dir}/preseed.cfg" || fail "Failed to inject SSH public key into preseed file."
+}
+
+
+function unpack_image() {
+  7zz x -o"${unpack}/" "${installer_image_original}" || fail "Failed to unpack installer image:  '${installer_image_generated}'"
+}
+
+
+function unpack_initrd() {
+  chmod +w -R "${unpack}/${initrd_path}"/ || fail "Failed to set write permission for initrd file."
+  gunzip "${unpack}/${initrd_path}"/initrd.gz || fail "Failed to unpack initrd file."
+}
+
+
+function inject_preseed() {
+  cd "${preseed_dir}" || fail "Failed to enter path to generated preseed."
+  cpio -o -H newc -A -F "${unpack}/${initrd_path}/initrd" <<< preseed.cfg || fail "Failed to append preseed file to initrd file."
+}
+
+
+function repack_initrd() {
+  gzip "${unpack}/${initrd_path}"/initrd || fail "Failed to repack initrd file."
+  chmod -w -R "${unpack}/${initrd_path}"/ || fail "Failed to revoke write permission for initrd file."
+}
+
+
+function configure_boot() {
+  sed -i '/include gtk/ {d};' "${unpack}"/isolinux/menu.cfg || fail "Failed to remove GTK installer boot option."
+  sed -i '/include spk/ {d};' "${unpack}"/isolinux/menu.cfg || fail "Failed to remove speech synthesis features from boot menu."
+  sed -i -E 's/^(label install)/default install\n\1/' "${unpack}"/isolinux/txt.cfg || fail "Failed to make non-graphical installer boot option default."
+  echo 'timeout 10' >> "${unpack}/isolinux/txt.cfg" || fail "Failed to add timeout option to boot menu."
+}
+
+
+function regenerate_checksums() {
+  cd "${unpack}" || fail "Failed to enter installer unpack directory:  '${unpack}'"
+  alg='md5'
+  checksum="${alg}sum"
+  checksum_file="${checksum}.txt"
+  chmod +w "${checksum_file}" || fail "Failed to set write permission on checksum file:  '${checksum_file}'"
+  find -follow -type f ! -name "${checksum_file}" -print0 | xargs -0 "${checksum}" > "${checksum_file}"
+  chmod -w "${checksum_file}" || fail "Failed to revoke write permissions on checksum file:  '${checksum_file}'"
+  cd "${OLDPWD}" || fail "Failed to exit installer unpack directory."
+}
+
+
+function repack_image() {
+  rm -rf "${installer_image_generated}" || fail "Failed to remove existing installer image:  '${installer_image_generated}'"
+  genisoimage \
+    -r -J \
+    -b "isolinux/isolinux.bin" \
+    -c "isolinux/boot.cat" \
+    -no-emul-boot \
+    -boot-load-size 4 \
+    -boot-info-table \
+    -o "${installer_image_generated}" \
+    "${unpack}/" \
+    || fail "Failed to generate installer image:  '${installer_image_generated}'"
+
+  isohybrid "${installer_image_generated}" || fail "Failed to make installer image bootable:  '${installer_image_generated}'"
+}
+
+
+function create_target() {
+  if test -e "${vm_image}"; then
+    rm "${vm_image}" || fail "Failed to remove existing OS image file:  '${vm_image}'"
+  fi
+  if ! test -e "${vm_images}"; then
+    mkdir -p "${vm_images}" || fail "Failed to create images directory:  '${vm_images}'"
+  fi
+  qemu-img create -f qcow2 "${vm_image}" "${vm_image_size}" || fail "Failed to create target disk image:  '${vm_image}'"
+}
+
+
+function install() {
+    runvm \
+    -nographic \
+    -cdrom "${installer_image_generated}" \
+    -boot once=d \
+    || fail "Failed to install."
+}
+
+
+function fail() {
+  printf '%s\n' "${1}" >&2
+  exit "${2:-1}"
+}
+
+
+main "${@}"

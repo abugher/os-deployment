@@ -2,11 +2,13 @@
 
 This directory should be the current working directory when launching these scripts, as they may rely on relative paths.  (This is a bug.)
 
+
 ## mksd
 
     bin/mksd <hostname>
 
 Deploy an OS to an SD card by writing an image file to it and then making modifications.  Refer to files under vars/host/ for per-hostname specifications, including hardware and OS.  Refer to files under vars/hardware/ and vars/os/ for hardware and OS specifications, respectively.
+
 
 ## mkbs
 
@@ -14,24 +16,67 @@ Deploy an OS to an SD card by writing an image file to it and then making modifi
 
 Deploy an OS to a USB storage device by running debootstrap then making modifications, mostly via chroot.
 
+
+## mkvm
+
+    bin/mkvm <hostname>
+    bin/runvm <hostname>
+    bin/sshvm <hostname>
+
+Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH port specified in ansible host variables for the named host.  The SSH host key for the named host should be automatically installed as the SSH host key for the VM.  The root password for the named host should be set on the VM.
+
+### To Do:
+
+* Set up a `known_hosts` entry for the VM automatically, probably via the `ansible-master` ansible role.
+* Set up an `ssh_config` entry for the VM automatically, probably via the `ansible-master` ansible role, such that the VM is reachable as `hostname-test` or something similar.
+* Split off installer image creation from the VM creation, callable as `mkiso`.
+* Find a way to securely use the installer image for production deployment.  (The preseed configuration includes SSH private key and root password in plaintext.  It should not be burned to CD or made available via PXE network boot.)
+* Remove preseed file after installation.  (The preseed configuration includes SSH private key and root password in plaintext.)
+* Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
+* Parameterize / depositionalize arguments.
+* Download imaging material automatically.
+* Make sure it is possible and safe to install and/or run more than one instance at a time.
+* Fix the `sshvm` functionality.
+* Integrate this with ansible inventory for testing purposes.
+* Review code and comments for correctness, unused code, redundancy, and aesthetics.
+* Implement enough virtual networking to test interoperability of VMs similar to production hosts.
+* Implement pre-deployment testing in ansible using VMs deployed this way.
+* Consider caching results of deployment when release version has not changed.  Be careful about this.
+* Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
+
 # Requirements
+
 
 ## mksd
 
-| COMMAND     | PACKAGE     |
-| :------     | :------     |
-| openssl     | openssl     |
-| mkpasswd    | whois       |
-| pv          | pv          |
-| mkfs.f2fs   | f2fs-tools  |
-| mkfs.ext4   | e2fsprogs   |
+| COMMAND             | PACKAGE         |
+| :------             | :------         |
+| openssl             | openssl         |
+| mkpasswd            | whois           |
+| pv                  | pv              |
+| mkfs.f2fs           | f2fs-tools      |
+| mkfs.ext4           | e2fsprogs       |
+
 
 ## mkbs
-| COMMAND     | PACKAGE     |
-| :------     | :------     |
-| sgdisk      | gdisk       |
-| parted      | parted      |
-| debootstrap | debootstrap |
+| COMMAND             | PACKAGE         |
+| :------             | :------         |
+| sgdisk              | gdisk           |
+| parted              | parted          |
+| debootstrap         | debootstrap     |
+
+
+## mkvm
+
+| COMMAND             | PACKAGE         |
+| :------             | :------         |
+|7zz                  | 7zip            |
+|genisoimage          | genisoimage     |
+|cpio                 | cpio            |
+|isohybrid            | syslinux-utils  |
+|qemu-system-x86\_64  | qemu-system     |
+|sshpass              | sshpass         |
+
 
 # Bugs:
 
