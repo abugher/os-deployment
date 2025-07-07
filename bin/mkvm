@@ -69,10 +69,12 @@ function main() {
     runvm)
       runvm
       ;;
-# This part is broken.
-#    sshvm)
-#      get_shell
-#      ;;
+    sshvm)
+      # This requires more configuration.  A hostname must be configured in
+      # ssh_config (or system hosts).  The host key must be known for the
+      # hostname.
+      sshvm
+      ;;
     *)
       fail "I don't know how to be '${self_name}'."
   esac
@@ -108,21 +110,24 @@ function runvm() {
 }
 
 
-function get_shell() {
+function wait_for_ssh() {
   while 
-    ! sshpass \
-      -d 3 \
-      ssh \
-        -p "${port}" \
-        root@localhost \
-        whoami \
-      3< <(pass show aaron/"${host}"/root) \
-      > /dev/null \
-      2>&1
+    ! sshvm whoami > /dev/null 2>&1
   do
-    sleep 1
     echo -n '.'
+    sleep 1
   done
+}
+
+
+function sshvm() {
+  sshpass \
+    -d 3 \
+    ssh \
+      -p "${port}" \
+      root@localhost \
+      "${@}" \
+    3< <(pass show aaron/"${host}"/root)
 }
 
 
