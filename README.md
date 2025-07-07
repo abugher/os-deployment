@@ -27,8 +27,6 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ### To Do:
 
-* Set up a `known_hosts` entry for the VM automatically, probably via the `ansible-master` ansible role.
-* Set up an `ssh_config` entry for the VM automatically, probably via the `ansible-master` ansible role, such that the VM is reachable as `hostname-test` or something similar.
 * Split off installer image creation from the VM creation, callable as `mkiso`.
 * Find a way to securely use the installer image for production deployment.  (The preseed configuration includes SSH private key and root password in plaintext.  It should not be burned to CD or made available via PXE network boot.)
 * Remove preseed file after installation.  (The preseed configuration includes SSH private key and root password in plaintext.)
@@ -36,7 +34,6 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 * Parameterize / depositionalize arguments.
 * Download imaging material automatically.
 * Make sure it is possible and safe to install and/or run more than one instance at a time.
-* Fix the `sshvm` functionality.
 * Integrate this with ansible inventory for testing purposes.
 * Review code and comments for correctness, unused code, redundancy, and aesthetics.
 * Implement enough virtual networking to test interoperability of VMs similar to production hosts.
