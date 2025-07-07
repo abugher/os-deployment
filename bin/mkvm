@@ -73,18 +73,9 @@ function main() {
 #    sshvm)
 #      get_shell
 #      ;;
-    dummy)
-      test_dummy
-      ;;
     *)
       fail "I don't know how to be '${self_name}'."
   esac
-}
-
-
-function test_dummy() {
-  echo "Private key:  ${ssh_host_key_private}"
-  echo "Public key:  ${ssh_host_key_public}"
 }
 
 
