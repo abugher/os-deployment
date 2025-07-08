@@ -27,19 +27,18 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ### To Do:
 
-* Declare success.  (Don't use half-generated material with no success marker.)
+* Avoid running with duplicate instances of one hostname.
 * Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
 * Download (torrent) original installer image automatically.
-* Integrate this with ansible inventory for testing purposes.
-* Implement pre-deployment testing in ansible using VMs deployed this way.
-* Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
-* Test by yanking out various parts and making sure fresh regeneration happens to all downstream parts.
+* Test by yanking out components and success markers and making sure fresh regeneration happens to all downstream components.
 * Test multiple hosts, asynchronous and in parallel.
-* Avoid duplicate instances of one hostname.
 * Implement enough virtual networking to test interoperability of VMs similar to production hosts.
 * Consider safe handling of preseed file.  Maybe instead of keeping it, delete it every time, but keep a checksum to detect change.  (The preseed configuration includes SSH private key and root password in plaintext.)
 * Find a way to securely use the installer image for production deployment.  (The preseed configuration includes SSH private key and root password in plaintext.  It should not be burned to CD or made available via PXE network boot.)
 * Review code and comments for correctness, unused code, redundancy, and aesthetics.
+* Integrate this with ansible inventory for testing purposes.
+* Implement pre-deployment testing in ansible using VMs deployed this way.
+* Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
 
 # Requirements
 
