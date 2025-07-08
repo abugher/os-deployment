@@ -43,17 +43,23 @@ function main() {
 
   # Pseudo-constant variables that should perhaps be overrideable by environment variables.
   # Some of these are dependent on argument handling.
-  # This one should almost definitely be set according to execution path.
-  #conf=~/.mkvm/conf
-  conf=~/control-center/os-deployment/conf
-  preseed_dir=~/.mkvm/preseed
+  preseed_template_dir=~/control-center/os-deployment/conf
+  preseed_template_file="${preseed_template_dir}/${arch}-${os}-${release}.cfg"
+  preseed_generated_dir=~/.mkvm/preseed/"${host}"
+  # I think this has to be named "preseed.cfg".
+  preseed_generated_file="${preseed_generated_dir}/preseed.cfg"
   unpack=~/.mkvm/"installer_unpack_${host}"
-  vm_images=~/.mkvm/vm_images
+  vm_image_clean_dir=~/.mkvm/vm_images_clean
+  vm_image_clean="${vm_image_clean_dir}/${host}.qcow"
+  vm_image_used_dir=~/.mkvm/vm_images_used
+  vm_image_used="${vm_image_used_dir}/${host}.qcow"
   installer_images=~/.mkvm/installer_images
-  vm_image="${vm_images}/${arch}-${os}-${release}-${port}.qcow"
   installer_image_original="/storage/bittorrent/content/${os}-${version}-${arch}-netinst.iso"
   installer_image_generated="${installer_images}/preseed-${os}-${version}-${arch}-${port}-netinst.iso"
-
+  pass_path="aaron/${host}/root"
+  pass_file=~/.password-store/"${pass_path}".gpg
+  ssh_host_key_private_file="${control_center}"/sensitive-ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key
+  ssh_host_key_public_file="${control_center}"/ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key.pub
   # Change directory -- probably not necessary.
   #bin_path="${0%/*}"
   #cd "${bin_path}" || fail "Failed to change directory to executable path:  '${bin_path}'"
@@ -66,9 +72,6 @@ function main() {
     mkvm)
       mkvm
       ;;
-    runvm)
-      runvm
-      ;;
     sshvm)
       sshvm
       ;;
@@ -79,8 +82,82 @@ function main() {
 
 
 function mkvm() {
-  prepare_directory_structure
+  remove_stale_files
+  create_directories
   generate_preseed
+  generate_installer_image
+  generate_vm_image
+  info "Launching VM im background."
+  launch_vm &
+}
+
+
+function remove_stale_files() {
+  info "Removing any stale files."
+  if 
+    ! test "${preseed_generated_file}" -nt "${preseed_template_file}" \
+    || ! test "${preseed_generated_file}" -nt "${pass_file}" \
+    || ! test "${preseed_generated_file}" -nt "${ssh_host_key_private_file}" \
+    || ! test "${preseed_generated_file}" -nt "${ssh_host_key_public_file}"
+  then
+    rm -f "${preseed_generated_file}" || fail "Failed to remove stale generated preseed."
+  fi
+
+  if
+    ! test "${installer_image_generated}" -nt "${preseed_generated_file}" \
+    || ! test "${installer_image_generated}" -nt "${installer_image_original}"
+  then
+    rm -f "${installer_image_generated}" || fail "Failed to remove stale generated installer image."
+  fi
+
+  if
+    ! test "${vm_image_clean}" -nt "${installer_image_generated}"
+  then
+    rm -f "${vm_image_clean}" || fail "Failed to remove stale clean VM image."
+  fi
+
+  # Unconditionally remove image.  It's probably full of ansible-deployed changes.
+  rm -f "${vm_image_used}" || fail "Failed to remove stale used VM image."
+
+#  if
+#    ! test "${vm_image_used}" -nt "${vm_image_clean}"
+#  then
+#    rm -f "${vm_image_used}" || fail "Failed to remove stale used VM image."
+#  fi
+}
+
+
+function create_directories() {
+  info "Creating directories."
+  mkdir -p "${preseed_generated_dir}" || fail "Failed to create preseed directory:  '${preseed_dir}'"
+  mkdir -p "${unpack}" || fail "Failed to create installer unpack directory:  '${unpack}'"
+  mkdir -p "${vm_image_clean_dir}" || fail "Failed to create images directory:  '${vm_image_clean_dir}'"
+  mkdir -p "${vm_image_used_dir}" || fail "Failed to create images directory:  '${vm_image_clean_dir}'"
+  mkdir -p "${installer_images}" || fail "Failed to create images directory:  '${vm_image_clean_dir}'"
+}
+
+
+function generate_preseed() {
+  if test -e "${preseed_generated_file}"; then
+    info "Generated preseed file is already present."
+    return 0
+  fi
+  info "Generating preseed file."
+  cp "${preseed_template_file}" "${preseed_generated_file}" || fail "Failed to copy preseed file."
+  sed -i "s/password \$/password $(pass show "${pass_path}")/" "${preseed_generated_file}" || fail "Failed to inject password into preseed file."
+  ssh_host_key_private="$(while read line; do if ! grep -q -- '-----' <<< "${line}"; then printf "%s" "${line}"; fi; done < "${ssh_host_key_private_file}")" || fail "Failed to read SSH private key."
+  sed -i "s#ssh_host_key_private#${ssh_host_key_private}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key into preseed file."
+  ssh_host_key_public="$(cat "${ssh_host_key_public_file}")" || fail "Failed to read SSH public key."
+  sed -i "s#ssh_host_key_public#${ssh_host_key_public}#" "${preseed_generated_file}" || fail "Failed to inject SSH public key into preseed file."
+}
+
+
+function generate_installer_image() {
+  if test -e "${installer_image_generated}"; then
+    info "Generated installer image is already present."
+    return 0
+  fi
+  info "Generating installer image."
   unpack_image
   unpack_initrd
   inject_preseed
@@ -88,19 +165,40 @@ function mkvm() {
   configure_boot
   regenerate_checksums
   repack_image
-  create_target
-  install
 }
 
 
-function runvm() {
+function generate_vm_image() {
+  if test -e "${vm_image_clean}"; then
+    info "Clean VM image is already present."
+    return 0
+  fi
+  info "Generating clean VM image."
+  initialize_vm_image
+  install_os
+}
+
+
+function launch_vm() {
+  if ! test "${vm_image_used}" -nt "${vm_image_clean}"; then
+    cp "${vm_image_clean}" "${vm_image_used}" || fail "Failed to copy clean VM image to used VM image."
+  fi
+  boot_this_image "${vm_image_used}"
+}
+
+
+# boot_this_image <vm_image_file>
+boot_this_image() {
+  image_file="${1}"
+  shift 1
   qemu-system-x86_64 \
     -nic user,hostfwd=tcp::"${port}"-:22 \
     -machine pc \
     -cpu max \
     -smp cores="${cpu_core_count}" \
     -m "${mem_mb}" \
-    -hda "${vm_image}" \
+    -hda "${image_file}" \
+    -nographic \
     "${@}" \
     > /dev/null \
     < /dev/null
@@ -124,38 +222,15 @@ function sshvm() {
       -p "${port}" \
       root@127.0.0.1 \
       "${@}" \
-    3< <(pass show aaron/"${host}"/root)
-}
-
-
-function prepare_directory_structure() {
-  rm -rf "${preseed_dir}" || fail "Failed to remove preseed directory:  '${preseed_dir}'"
-  mkdir -p "${preseed_dir}" || fail "Failed to create preseed directory:  '${preseed_dir}'"
-  if test -e "${unpack}"; then
-    chmod -R u+rwX "${unpack}" || fail "Failed to prepare installer unpack directory for deletion:  '${unpack}'"
-    rm -rf "${unpack}" || fail "Failed to remove installer unpack directory:  '${unpack}'"
-  fi
-  mkdir -p "${unpack}" || fail "Failed to create installer unpack directory:  '${unpack}'"
-  rm -rf "${vm_images}" || fail "Failed to remove images directory:  '${vm_images}'"
-  mkdir -p "${vm_images}" || fail "Failed to create images directory:  '${vm_images}'"
-  rm -rf "${installer_images}" || fail "Failed to remove images directory:  '${vm_images}'"
-  mkdir -p "${installer_images}" || fail "Failed to create images directory:  '${vm_images}'"
-}
-
-
-function generate_preseed() {
-  # Designate a preseed file.
-  cp "${conf}/${arch}-${os}-${release}.cfg" "${preseed_dir}/preseed.cfg" || fail "Failed to copy preseed file."
-  # Populate sensitive elements of preseed file.
-  sed -i "s/password \$/password $(pass show "aaron/${host}/root")/" "${preseed_dir}/preseed.cfg" || fail "Failed to inject password into preseed file."
-  ssh_host_key_private="$(while read line; do if ! grep -q -- '-----' <<< "${line}"; then printf "%s" "${line}"; fi; done < "${control_center}"/sensitive-ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key)" || fail "Failed to read SSH private key."
-  sed -i "s#ssh_host_key_private#${ssh_host_key_private}#" "${preseed_dir}/preseed.cfg" || fail "Failed to inject SSH private key into preseed file."
-  ssh_host_key_public="$(cat "${control_center}"/ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key.pub)" || fail "Failed to read SSH public key."
-  sed -i "s#ssh_host_key_public#${ssh_host_key_public}#" "${preseed_dir}/preseed.cfg" || fail "Failed to inject SSH public key into preseed file."
+    3< <(pass show "${pass_path}")
 }
 
 
 function unpack_image() {
+  if test -e "${unpack}"; then
+    chmod -R u+rwX "${unpack}" || fail "Failed to prepare installer unpack directory for deletion:  '${unpack}'"
+    rm -rf "${unpack}" || fail "Failed to remove installer unpack directory:  '${unpack}'"
+  fi
   7zz x -o"${unpack}/" "${installer_image_original}" || fail "Failed to unpack installer image:  '${installer_image_generated}'"
 }
 
@@ -167,7 +242,7 @@ function unpack_initrd() {
 
 
 function inject_preseed() {
-  cd "${preseed_dir}" || fail "Failed to enter path to generated preseed."
+  cd "${preseed_generated_dir}" || fail "Failed to enter path to generated preseed."
   cpio -o -H newc -A -F "${unpack}/${initrd_path}/initrd" <<< preseed.cfg || fail "Failed to append preseed file to initrd file."
 }
 
@@ -199,7 +274,6 @@ function regenerate_checksums() {
 
 
 function repack_image() {
-  rm -rf "${installer_image_generated}" || fail "Failed to remove existing installer image:  '${installer_image_generated}'"
   genisoimage \
     -r -J \
     -b "isolinux/isolinux.bin" \
@@ -215,29 +289,29 @@ function repack_image() {
 }
 
 
-function create_target() {
-  if test -e "${vm_image}"; then
-    rm "${vm_image}" || fail "Failed to remove existing OS image file:  '${vm_image}'"
-  fi
-  if ! test -e "${vm_images}"; then
-    mkdir -p "${vm_images}" || fail "Failed to create images directory:  '${vm_images}'"
-  fi
-  qemu-img create -f qcow2 "${vm_image}" "${vm_image_size}" || fail "Failed to create target disk image:  '${vm_image}'"
+function initialize_vm_image() {
+  info "Initializing clean VM image."
+  qemu-img create -f qcow2 "${vm_image_clean}" "${vm_image_size}" || fail "Failed to create target disk image:  '${vm_image_clean}'"
 }
 
 
-function install() {
-    runvm \
-    -nographic \
+function install_os() {
+  info "Installing OS to clean VM image."
+  boot_this_image "${vm_image_clean}" \
     -cdrom "${installer_image_generated}" \
     -boot once=d \
-    || fail "Failed to install."
+    || fail "Failed to install OS to clean VM image."
 }
 
 
 function fail() {
   printf '%s\n' "${1}" >&2
   exit "${2:-1}"
+}
+
+
+function info() {
+  printf '%s\n' "${1}"
 }
 
 

@@ -27,19 +27,19 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ### To Do:
 
-* Split off installer image creation from the VM creation, callable as `mkiso`.
-* Find a way to securely use the installer image for production deployment.  (The preseed configuration includes SSH private key and root password in plaintext.  It should not be burned to CD or made available via PXE network boot.)
-* Remove preseed file after installation.  (The preseed configuration includes SSH private key and root password in plaintext.)
+* Declare success.  (Don't use half-generated material with no success marker.)
 * Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
-* Parameterize / depositionalize arguments.
-* Download imaging material automatically.
-* Make sure it is possible and safe to install and/or run more than one instance at a time.
+* Download (torrent) original installer image automatically.
 * Integrate this with ansible inventory for testing purposes.
-* Review code and comments for correctness, unused code, redundancy, and aesthetics.
-* Implement enough virtual networking to test interoperability of VMs similar to production hosts.
 * Implement pre-deployment testing in ansible using VMs deployed this way.
-* Consider caching results of deployment when release version has not changed.  Be careful about this.
 * Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
+* Test by yanking out various parts and making sure fresh regeneration happens to all downstream parts.
+* Test multiple hosts, asynchronous and in parallel.
+* Avoid duplicate instances of one hostname.
+* Implement enough virtual networking to test interoperability of VMs similar to production hosts.
+* Consider safe handling of preseed file.  Maybe instead of keeping it, delete it every time, but keep a checksum to detect change.  (The preseed configuration includes SSH private key and root password in plaintext.)
+* Find a way to securely use the installer image for production deployment.  (The preseed configuration includes SSH private key and root password in plaintext.  It should not be burned to CD or made available via PXE network boot.)
+* Review code and comments for correctness, unused code, redundancy, and aesthetics.
 
 # Requirements
 
