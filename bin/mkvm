@@ -85,7 +85,6 @@ function mkvm() {
   generate_preseed
   generate_installer_image
   generate_vm_image
-  info "Launching VM."
   launch_vm
   unlock
 }
@@ -97,7 +96,6 @@ function lock() {
     cat "${lock_path}"/pid >&2
     fail "Lock already held for host:  '${host}'"
   fi
-
   echo $$ > "${lock_path}"/pid
 }
 
@@ -203,6 +201,7 @@ function launch_vm() {
   if ! test "${vm_image_used}" -nt "${vm_image_clean}"; then
     cp "${vm_image_clean}" "${vm_image_used}" || fail "Failed to copy clean VM image to used VM image."
   fi
+  info "Launching VM."
   boot_this_image "${vm_image_used}"
 }
 
