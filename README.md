@@ -27,7 +27,6 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ### To Do:
 
-* Avoid running with duplicate instances of one hostname.
 * Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
 * Download (torrent) original installer image automatically.
 * Test by yanking out components and success markers and making sure fresh regeneration happens to all downstream components.

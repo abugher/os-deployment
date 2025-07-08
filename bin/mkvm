@@ -43,6 +43,8 @@ function main() {
   pass_file=~/.password-store/"${pass_path}".gpg
   ssh_host_key_private_file="${control_center}"/sensitive-ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key
   ssh_host_key_public_file="${control_center}"/ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key.pub
+  lock_parent_dir=~/.mkvm/locks
+  lock_path="${lock_parent_dir}"/"${host}"
   success_dir=~/.mkvm/success
   success_file_preseed="${success_dir}/preseed"
   success_file_installer_image="${success_dir}/installer_image"
@@ -77,13 +79,31 @@ function main() {
 
 
 function mkvm() {
-  remove_stale_files
   create_directories
+  lock
+  remove_stale_files
   generate_preseed
   generate_installer_image
   generate_vm_image
   info "Launching VM."
   launch_vm
+  unlock
+}
+
+
+function lock() {
+  if ! mkdir "${lock_path}"; then
+    error "Lock held by PID:"
+    cat "${lock_path}"/pid >&2
+    fail "Lock already held for host:  '${host}'"
+  fi
+
+  echo $$ > "${lock_path}"/pid
+}
+
+
+function unlock() {
+  rm -rf "${lock_path}" || error "Failed to remove lock."
 }
 
 
@@ -121,6 +141,7 @@ function remove_stale_files() {
 
 function create_directories() {
   info "Creating directories."
+  mkdir -p "${lock_parent_dir}" || fail "Failed to create lock directory:  '${lock_parent_dir}'"
   mkdir -p "${success_dir}" || fail "Failed to create success directory:  '${success_dir}'"
   mkdir -p "${preseed_generated_dir}" || fail "Failed to create preseed directory:  '${preseed_dir}'"
   mkdir -p "${unpack}" || fail "Failed to create installer unpack directory:  '${unpack}'"
@@ -304,8 +325,14 @@ function install_os() {
 
 
 function fail() {
-  printf '%s\n' "${1}" >&2
+  error "${1}"
+  unlock
   exit "${2:-1}"
+}
+
+
+function error() {
+  printf '%s\n' "${1}" >&2
 }
 
 
