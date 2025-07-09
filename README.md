@@ -29,7 +29,6 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 * Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
 * Download (torrent) original installer image automatically.
-* Test by yanking out components and success markers and making sure fresh regeneration happens to all downstream components.
 * Test multiple hosts, asynchronous and in parallel.
 * Implement enough virtual networking to test interoperability of VMs similar to production hosts.
 * Consider safe handling of preseed file.  Maybe instead of keeping it, delete it every time, but keep a checksum to detect change.  (The preseed configuration includes SSH private key and root password in plaintext.)
