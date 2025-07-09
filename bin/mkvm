@@ -45,7 +45,7 @@ function main() {
   ssh_host_key_public_file="${control_center}"/ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key.pub
   lock_parent_dir=~/.mkvm/locks
   lock_path="${lock_parent_dir}"/"${host}"
-  success_dir=~/.mkvm/success
+  success_dir=~/.mkvm/success/"${host}"
   success_file_preseed="${success_dir}/preseed"
   success_file_installer_image="${success_dir}/installer_image"
   success_file_vm_image="${success_dir}/vm_image"
@@ -57,7 +57,7 @@ function main() {
   installer_images=~/.mkvm/installer_images
   installer_image_original="/storage/bittorrent/content/${os}-${version}-${arch}-netinst.iso"
   installer_image_generated="${installer_images}/${host}.iso"
-  unpack=~/.mkvm/"installer_unpack_${host}"
+  unpack=~/.mkvm/"installer_unpack/${host}"
   vm_image_clean_dir=~/.mkvm/vm_images_clean
   vm_image_clean="${vm_image_clean_dir}/${host}.qcow"
   vm_image_used_dir=~/.mkvm/vm_images_used
