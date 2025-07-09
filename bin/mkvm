@@ -56,7 +56,7 @@ function main() {
   preseed_generated_file="${preseed_generated_dir}/preseed.cfg"
   installer_images=~/.mkvm/installer_images
   installer_image_original="/storage/bittorrent/content/${os}-${version}-${arch}-netinst.iso"
-  installer_image_generated="${installer_images}/preseed-${os}-${version}-${arch}-${port}-netinst.iso"
+  installer_image_generated="${installer_images}/${host}.iso"
   unpack=~/.mkvm/"installer_unpack_${host}"
   vm_image_clean_dir=~/.mkvm/vm_images_clean
   vm_image_clean="${vm_image_clean_dir}/${host}.qcow"
