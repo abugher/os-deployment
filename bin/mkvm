@@ -106,30 +106,50 @@ function unlock() {
 
 
 function remove_stale_files() {
+  # In bash, the "test" builtin, when comparing age of files with "-nt" or
+  # "-ot", considers any existing file to be newer than any missing file, and no
+  # error is raised for comparing the age of a missing file.  Explicitly check
+  # existence separately.
   info "Removing any stale files."
   if 
     ! test -e "${success_file_preseed}" \
+    || ! test -e "${preseed_template_file}" \
     || ! test "${preseed_generated_file}" -nt "${preseed_template_file}" \
+    || ! test -e "${pass_file}" \
     || ! test "${preseed_generated_file}" -nt "${pass_file}" \
+    || ! test -e "${ssh_host_key_private_file}" \
     || ! test "${preseed_generated_file}" -nt "${ssh_host_key_private_file}" \
+    || ! test -e "${ssh_host_key_public_file}" \
     || ! test "${preseed_generated_file}" -nt "${ssh_host_key_public_file}"
   then
+    info "Removing preseed."
     rm -f "${preseed_generated_file}" || fail "Failed to remove stale generated preseed."
+  else
+    info "NOT removing preseed."
   fi
 
   if
     ! test -e "${success_file_installer_image}" \
+    || ! test -e "${preseed_generated_file}" \
     || ! test "${installer_image_generated}" -nt "${preseed_generated_file}" \
+    || ! test -e "${installer_image_original}" \
     || ! test "${installer_image_generated}" -nt "${installer_image_original}"
   then
+    info "Removing generated installer image."
     rm -f "${installer_image_generated}" || fail "Failed to remove stale generated installer image."
+  else
+    info "NOT removing generated installer image."
   fi
 
   if
     ! test -e "${success_file_vm_image}" \
+    || ! test -e "${installer_image_generated}" \
     || ! test "${vm_image_clean}" -nt "${installer_image_generated}"
   then
+    info "Removing VM image."
     rm -f "${vm_image_clean}" || fail "Failed to remove stale clean VM image."
+  else
+    info "NOT removing VM image."
   fi
 
   # Unconditionally remove used image along with any untracked changes it may contain.
