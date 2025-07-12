@@ -14,7 +14,7 @@ function main() {
   mem_gb='4'
   mem_mb="$(( mem_gb * 1024 ))"
   vm_image_size='10G'
-  control_center=~/control-center
+  control_center=~/control-center/stg
   cpu_core_count=4
 
   if ! test 1 = "${#}"; then
@@ -49,7 +49,7 @@ function main() {
   success_file_preseed="${success_dir}/preseed"
   success_file_installer_image="${success_dir}/installer_image"
   success_file_vm_image="${success_dir}/vm_image"
-  preseed_template_dir=~/control-center/os-deployment/conf
+  preseed_template_dir="${control_center}"/os-deployment/conf
   preseed_template_file="${preseed_template_dir}/${arch}-${os}-${release}.cfg"
   preseed_generated_dir=~/.mkvm/preseed/"${host}"
   # I think this has to be named "preseed.cfg".
