@@ -27,7 +27,9 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ### To Do:
 
-* Look up netmask and gateway from inventory.  (Right now they are static in the preseed template.)
+* Replace reference to control-center/stg with a path-to-self lookup.
+* Look up network, netmask, gateway, and DNS server from inventory.  (Right now they are static in the preseed template and in qemu invocation.)
+* Document and codify any modification of the subnet, address, etc.  (This may be necessary to use different addresses within qemu's NAT environment.)
 * Retrieve information from ansible inventory in a better way.  (Right now it is done by interpreting text and makes assumptions about formatting.  It would be better to ask ansible to show the values of the host variables.  `ansible-inventory` may be able to do so.)
 * Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
 * Download (torrent) original installer image automatically.
