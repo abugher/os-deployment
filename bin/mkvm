@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# mkvm <host>
+# mkvm <hostname>
 
 
 
@@ -30,16 +30,16 @@ function main() {
   fi
   host="${1}"
 
-  port="$(awk '/^ssh_unique_port/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${host}".yml | head -n 1 | sed "s/['\"]//g")"
+  port="$(awk '/^ssh_unique_port/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
   if ! grep -qE '^[0-9]+$' <<< "${port}"; then
     fail "Invalid port number:  '${port}'"
   fi
-  mac_address="$(awk '/^mac_address/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${host}".yml | head -n 1 | sed "s/['\"]//g")"
+  mac_address="$(awk '/^mac_address/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
   hex_byte='[a-fA-F0-9]{2}'
   if ! grep -qE "^${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}\$" <<< "${mac_address}"; then
     fail "Invalid MAC address:  '${mac_address}'"
   fi
-  ip_address="$(awk '/^ip_address/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${host}".yml | head -n 1 | sed "s/['\"]//g")"
+  ip_address="$(awk '/^ip_address/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
   dec_byte='([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
   if ! grep -qE "^${dec_byte}\.${dec_byte}\.${dec_byte}\.${dec_byte}\$" <<< "${ip_address}"; then
     fail "Invalid IP address:  '${ip_address}'"
@@ -58,29 +58,29 @@ function main() {
       ;;
   esac
 
-  pass_path="aaron/${host}/root"
+  pass_path="aaron/${hostname}/root"
   pass_file=~/.password-store/"${pass_path}".gpg
-  ssh_host_key_private_file="${control_center}"/sensitive-ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key
-  ssh_host_key_public_file="${control_center}"/ansible/inventory/hosts/"${host}"/files/ssh_keys/ssh_host_rsa_key.pub
+  ssh_host_key_private_file="${control_center}"/sensitive-ansible/inventory/hosts/"${hostname}"/files/ssh_keys/ssh_host_rsa_key
+  ssh_host_key_public_file="${control_center}"/ansible/inventory/hosts/"${hostname}"/files/ssh_keys/ssh_host_rsa_key.pub
   lock_parent_dir=~/.mkvm/locks
-  lock_path="${lock_parent_dir}"/"${host}"
-  success_dir=~/.mkvm/success/"${host}"
+  lock_path="${lock_parent_dir}"/"${hostname}"
+  success_dir=~/.mkvm/success/"${hostname}"
   success_file_preseed="${success_dir}/preseed"
   success_file_installer_image="${success_dir}/installer_image"
   success_file_vm_image="${success_dir}/vm_image"
   preseed_template_dir="${control_center}"/os-deployment/conf
   preseed_template_file="${preseed_template_dir}/${arch}-${os}-${release}.cfg"
-  preseed_generated_dir=~/.mkvm/preseed/"${host}"
+  preseed_generated_dir=~/.mkvm/preseed/"${hostname}"
   # I think this has to be named "preseed.cfg".
   preseed_generated_file="${preseed_generated_dir}/preseed.cfg"
   installer_images=~/.mkvm/installer_images
   installer_image_original="/storage/bittorrent/content/${os}-${version}-${arch}-netinst.iso"
-  installer_image_generated="${installer_images}/${host}.iso"
-  unpack=~/.mkvm/"installer_unpack/${host}"
+  installer_image_generated="${installer_images}/${hostname}.iso"
+  unpack=~/.mkvm/"installer_unpack/${hostname}"
   vm_image_clean_dir=~/.mkvm/vm_images_clean
-  vm_image_clean="${vm_image_clean_dir}/${host}.qcow"
+  vm_image_clean="${vm_image_clean_dir}/${hostname}.qcow"
   vm_image_used_dir=~/.mkvm/vm_images_used
-  vm_image_used="${vm_image_used_dir}/${host}.qcow"
+  vm_image_used="${vm_image_used_dir}/${hostname}.qcow"
 
   case "${self_name}" in
     mkvm)
@@ -111,7 +111,7 @@ function lock() {
   if ! mkdir "${lock_path}"; then
     error "Lock held by PID:"
     cat "${lock_path}"/pid >&2
-    fail "Lock already held for host:  '${host}'"
+    fail "Lock already held for host:  '${hostname}'"
   fi
   echo $$ > "${lock_path}"/pid
 }
@@ -240,7 +240,7 @@ boot_this_image() {
   image_file="${1}"
   shift 1
   qemu-system-x86_64 \
-    -nic tap,mac="${mac_address}",ifname=tap0,script=no,downscript=no \
+    -nic tap,id="${hostname}",mac="${mac_address}",ifname=tap0,script=no,downscript=no \
     -machine pc \
     -cpu max \
     -smp cores="${cpu_core_count}" \
