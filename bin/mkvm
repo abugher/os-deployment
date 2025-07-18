@@ -28,7 +28,7 @@ function main() {
   if ! test 1 = "${#}"; then
     fail "Wrong number of arguments.  Just specify a short hostname."
   fi
-  host="${1}"
+  hostname="${1}"
 
   port="$(awk '/^ssh_unique_port/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
   if ! grep -qE '^[0-9]+$' <<< "${port}"; then
