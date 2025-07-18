@@ -1,0 +1,57 @@
+#!/bin/bash
+# Make VM network - configure networking on this machine for VMs.
+
+mode="${1}"
+host_external_ip_address="$(ip addr | awk -F '[ /]+' '/inet / {print $3}' | grep -v '^127\.0\.0\.1$' | head -n 1)"
+host_internal_ip_address='192.168.12.1'
+host_internal_subnet_bits='24'
+
+
+function main() {
+  case "${mode}" in
+    'down')
+      down
+      ;;
+    '')
+      ;&
+    'up')
+      up
+      ;;
+    *)
+      fail "Unknown mode:  '${mode}'"
+      ;;
+  esac
+}
+
+
+function down() {
+  iptables -t nat -F || fail "Failed to flush nat table."
+  ip link delete tap0 || fail "Failed to delete TAP interface."
+  cat > /proc/sys/net/ipv4/ip_forward <<< '0' || fail "Failed to disable IP forwarding."
+}
+
+
+function up() {
+  ip tuntap add tap0 mode tap || fail "Failed to add TAP interface."
+  ip addr add "${host_internal_ip_address}/${host_internal_subnet_bits}" dev tap0 || fail "Failed to configure TAP interface."
+  ip link set tap0 up || fail "Failed to bring up TAP interface."
+
+  # Maybe this should be done with sysctl as part of one-time setup.
+  # /etc/sysctl.conf
+  # sysctl -p
+  cat > /proc/sys/net/ipv4/ip_forward <<< '1' || fail "Failed to enable IP forwarding."
+
+  # Flush.
+  iptables -t nat -F || fail "Failed to flush nat table."
+  # Establish NAT.
+  iptables -t nat -A POSTROUTING -o wlan0 -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to configure SNAT target."
+}
+
+
+function fail() {
+  printf 'ERROR:  %s\n' "${1}" >&2
+  exit "${2:-1}"
+}
+
+
+main

@@ -28,8 +28,11 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 ### To Do:
 
 * Replace reference to control-center/stg with a path-to-self lookup.
-* Look up network, netmask, gateway, and DNS server from inventory.  (Right now they are static in the preseed template and in qemu invocation.)
+* Look up network, netmask, gateway, and DNS server from inventory.  (Right now they are static in the preseed template, in qemu invocation, and in network configuration scripting.)
+* Configure the name of the TAP interface in one place.  (Right now "tap0" is written in a few places.)
+* Look up network interface name from live configuration.  (Right now it is hardcoded in `mkvmnet`.)
 * Document and codify any modification of the subnet, address, etc.  (This may be necessary to use different addresses within qemu's NAT environment.)
+* Try to use the same subnet for VMs as the LAN uses.  (This may be difficult, since the host needs to be part of both networks.  It may be overkill, but I think I could create a VM on a different subnet, then make that VM serve as a NAT gateway for the duplicated VM subnet.)
 * Retrieve information from ansible inventory in a better way.  (Right now it is done by interpreting text and makes assumptions about formatting.  It would be better to ask ansible to show the values of the host variables.  `ansible-inventory` may be able to do so.)
 * Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
 * Download (torrent) original installer image automatically.
@@ -41,6 +44,8 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 * Integrate this with ansible inventory for testing purposes.
 * Implement pre-deployment testing in ansible using VMs deployed this way.
 * Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
+* Create or modify an ansible role to install requisites for this to run.  (Install iptables, iproute2, and qemu packages.)
+* Codify relationship between `mkvm` and `mkvmnet`.  (Maybe declare success when the net is up, then `mkvm` should check for success before trying to run.)
 
 # Requirements
 

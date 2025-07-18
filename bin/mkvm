@@ -240,7 +240,7 @@ boot_this_image() {
   image_file="${1}"
   shift 1
   qemu-system-x86_64 \
-    -nic user,hostfwd=tcp::"${port}"-:22,net="${subnet_with_mask}",host="${gateway}",mac="${mac_address}" \
+    -nic tap,mac="${mac_address}",ifname=tap0,script=no,downscript=no \
     -machine pc \
     -cpu max \
     -smp cores="${cpu_core_count}" \
