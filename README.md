@@ -27,6 +27,7 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ### To Do:
 
+* Determine how to set routes on VM host system on the basis of which device/interface receives a packet.  (The host should reach the real meliora when reaching out to the IP address of meliora.  A guest VM should reach testvm-meliora when reaching out to the IP address of meliora.  A packet from testvm-meliora to the internet should be NAT-mangled before being forwarded, and the reply should be NAT-mangled and sent to testvm-meliora, not the real meliora.)
 * Replace reference to control-center/stg with a path-to-self lookup.
 * Look up network, netmask, gateway, and DNS server from inventory.  (Right now they are static in the preseed template, in qemu invocation, and in network configuration scripting.)
 * Configure the name of the TAP interface in one place.  (Right now "tap0" is written in a few places.)
@@ -46,6 +47,8 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 * Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
 * Create or modify an ansible role to install requisites for this to run.  (Install iptables, iproute2, and qemu packages.)
 * Codify relationship between `mkvm` and `mkvmnet`.  (Maybe declare success when the net is up, then `mkvm` should check for success before trying to run.)
+* Differentiate testing all hosts as test VMs together from testing one host as a test VM with access to real hosts.  (Determine whether the second is possible and/or reasonable to implement.)
+* Consider how to deal with hosts outside the LAN, specifically neuron-mail, as test VMs.  (Static routes inside the test VM network for the out-of-LAN ip address, maybe.)
 
 # Requirements
 
