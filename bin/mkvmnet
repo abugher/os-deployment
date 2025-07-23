@@ -2,12 +2,25 @@
 # Make VM network - configure networking on this machine for VMs.
 
 mode="${1}"
+# Test VM interface number is expected to be the SSH unique port number.
 host_external_ip_address="$(ip addr | awk -F '[ /]+' '/inet / {print $3}' | grep -v '^127\.0\.0\.1$' | head -n 1)"
 host_internal_ip_address='192.168.12.1'
 host_internal_subnet_bits='24'
 
 
+
 function main() {
+  interface_number="${INTERFACE_NUMBER}"
+  if ! grep -qE '^[0-9]+$' <<< "${interface_number}"; then
+    fail "Invalid interface number:  '${interface_number}'"
+  fi
+  interface=tap"${interface_number}"
+  ip_address="${IP_ADDRESS}"
+  dec_byte='([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
+  if ! grep -qE "^${dec_byte}\.${dec_byte}\.${dec_byte}\.${dec_byte}\$" <<< "${ip_address}"; then
+    fail "Invalid IP address:  '${ip_address}'"
+  fi
+
   case "${mode}" in
     'down')
       down
@@ -25,16 +38,25 @@ function main() {
 
 
 function down() {
-  iptables -t nat -F || fail "Failed to flush nat table."
-  ip link delete tap0 || fail "Failed to delete TAP interface."
-  cat > /proc/sys/net/ipv4/ip_forward <<< '0' || fail "Failed to disable IP forwarding."
+#  interfaces=( 
+#    $(
+#      ip addr | awk -F ': ' '/^[0-9]+: tap[0-9]+:/ {print $2}'
+#    ) 
+#  )
+#  iptables -t nat -F || fail "Failed to flush nat table."
+#  for interface in "${interfaces[@]}"; do
+
+#  done
+  ip link delete "${interface}" || fail "Failed to delete TAP interface:  '${interface}'"
+#  cat > /proc/sys/net/ipv4/ip_forward <<< '0' || fail "Failed to disable IP forwarding:  '${interface}'"
 }
 
 
 function up() {
-  ip tuntap add tap0 mode tap || fail "Failed to add TAP interface."
-  ip addr add "${host_internal_ip_address}/${host_internal_subnet_bits}" dev tap0 || fail "Failed to configure TAP interface."
-  ip link set tap0 up || fail "Failed to bring up TAP interface."
+  ip tuntap add "${interface}" mode tap || fail "Failed to add TAP interface."
+  ip address add "${host_internal_ip_address}/${host_internal_subnet_bits}" dev "${interface}" noprefixroute || fail "Failed to configure TAP interface."
+  ip link set "${interface}" up || fail "Failed to bring up TAP interface."
+  ip route add "${ip_address}" dev "${interface}" src "${host_internal_ip_address}" || fail "Failed to set route."
 
   # Maybe this should be done with sysctl as part of one-time setup.
   # /etc/sysctl.conf
@@ -42,9 +64,9 @@ function up() {
   cat > /proc/sys/net/ipv4/ip_forward <<< '1' || fail "Failed to enable IP forwarding."
 
   # Flush.
-  iptables -t nat -F || fail "Failed to flush nat table."
+  #iptables -t nat -F || fail "Failed to flush nat table."
   # Establish NAT.
-  iptables -t nat -A POSTROUTING -o wlan0 -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to configure SNAT target."
+  #iptables -t nat -A POSTROUTING -o wlan0 -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to configure SNAT target."
 }
 
 

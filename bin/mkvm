@@ -96,6 +96,7 @@ function main() {
 
 
 function mkvm() {
+  INTERFACE_NUMBER="${port}" IP_ADDRESS="${ip_address}" sudo -E "${self_path}"/mkvmnet up || fail "Failed to bring up networking for:  '${hostname}'"
   create_directories
   lock
   remove_stale_files
@@ -103,6 +104,7 @@ function mkvm() {
   generate_installer_image
   generate_vm_image
   launch_vm
+  INTERFACE_NUMBER="${port}" IP_ADDRESS="${ip_address}" sudo -E "${self_path}"/mkvmnet down || fail "Failed to bring down networking for:  '${hostname}'"
   unlock
 }
 
@@ -240,7 +242,7 @@ boot_this_image() {
   image_file="${1}"
   shift 1
   qemu-system-x86_64 \
-    -nic tap,id="${hostname}",mac="${mac_address}",ifname=tap0,script=no,downscript=no \
+    -nic tap,id="${hostname}",mac="${mac_address}",ifname="tap${port}",script=no,downscript=no \
     -machine pc \
     -cpu max \
     -smp cores="${cpu_core_count}" \
