@@ -27,6 +27,9 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ### To Do:
 
+* Reorder these bullet points coherently.
+* Plan a dedicated user to run ansible deployments to test VMs (but not the test VMs themselves).
+* Create a DNS bootstrap plan suitable for both the real network and the test VM network.  (Test it with the test VMs, then also test it on the real network.)
 * Determine how to set routes on VM host system on the basis of which device/interface receives a packet.  (The host should reach the real meliora when reaching out to the IP address of meliora.  A guest VM should reach testvm-meliora when reaching out to the IP address of meliora.  A packet from testvm-meliora to the internet should be NAT-mangled before being forwarded, and the reply should be NAT-mangled and sent to testvm-meliora, not the real meliora.)
 * Replace reference to control-center/stg with a path-to-self lookup.
 * Look up network, netmask, gateway, and DNS server from inventory.  (Right now they are static in the preseed template, in qemu invocation, and in network configuration scripting.)
