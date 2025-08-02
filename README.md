@@ -29,24 +29,21 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 * Reorder these bullet points coherently.
 * Avoid prompting for sudo password a second time when bringing down networking.  (Maybe keep sudo active in a loop.  Maybe keep a root process alive and signal it when ready to bring down networking.)
+* Implement enough virtual networking to test interoperability of VMs similar to production hosts.
+* Try to use the same subnet for VMs as the LAN uses.  (Requires NAT and some points below.)
 * Plan a dedicated user to run ansible deployments to test VMs (but not the test VMs themselves).
-* Create a DNS bootstrap plan suitable for both the real network and the test VM network.  (Test it with the test VMs, then also test it on the real network.)
-* Determine how to set routes on VM host system on the basis of which device/interface receives a packet.  (The host should reach the real meliora when reaching out to the IP address of meliora.  A guest VM should reach testvm-meliora when reaching out to the IP address of meliora.  A packet from testvm-meliora to the internet should be NAT-mangled before being forwarded, and the reply should be NAT-mangled and sent to testvm-meliora, not the real meliora.)
+* Route packets on the basis of which device/interface receives a packet.  (The host should reach the real meliora when reaching out to the IP address of meliora.  A guest VM should reach testvm-meliora when reaching out to the IP address of meliora.  A packet from testvm-meliora to the internet should be NAT-mangled before being forwarded, and the reply should be NAT-mangled and sent to testvm-meliora, not the real meliora.)
+* Route packets from user testvm-ssh-client to test VMs.  (iptables)
+* Test DNS bootstrap on test VMs.
 * Replace reference to control-center/stg with a path-to-self lookup.
 * Look up network, netmask, gateway, and DNS server from inventory.  (Right now they are static in the preseed template, in qemu invocation, and in network configuration scripting.)
-* Configure the name of the TAP interface in one place.  (Right now "tap0" is written in a few places.)
 * Look up network interface name from live configuration.  (Right now it is hardcoded in `mkvmnet`.)
-* Document and codify any modification of the subnet, address, etc.  (This may be necessary to use different addresses within qemu's NAT environment.)
-* Try to use the same subnet for VMs as the LAN uses.  (This may be difficult, since the host needs to be part of both networks.  It may be overkill, but I think I could create a VM on a different subnet, then make that VM serve as a NAT gateway for the duplicated VM subnet.)
 * Retrieve information from ansible inventory in a better way.  (Right now it is done by interpreting text and makes assumptions about formatting.  It would be better to ask ansible to show the values of the host variables.  `ansible-inventory` may be able to do so.)
 * Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
 * Download (torrent) original installer image automatically.
-* Test multiple hosts, asynchronous and in parallel.
-* Implement enough virtual networking to test interoperability of VMs similar to production hosts.
 * Consider safe handling of preseed file.  Maybe instead of keeping it, delete it every time, but keep a checksum to detect change.  (The preseed configuration includes SSH private key and root password in plaintext.)
 * Find a way to securely use the installer image for production deployment.  (The preseed configuration includes SSH private key and root password in plaintext.  It should not be burned to CD or made available via PXE network boot.)
 * Review code and comments for correctness, unused code, redundancy, and aesthetics.
-* Integrate this with ansible inventory for testing purposes.
 * Implement pre-deployment testing in ansible using VMs deployed this way.
 * Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
 * Create or modify an ansible role to install requisites for this to run.  (Install iptables, iproute2, and qemu packages.)
