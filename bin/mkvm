@@ -17,13 +17,10 @@ function main() {
   mem_gb='4'
   mem_mb="$(( mem_gb * 1024 ))"
   vm_image_size='10G'
-  #control_center=~/control-center/stg
   control_center="${self_path}"/../..
   cpu_core_count=4
-  #subnet_with_mask="192.168.11.0/24"
-  subnet_with_mask="192.168.12.0/24"
-  #gateway="192.168.11.1"
-  gateway="192.168.12.1"
+  subnet_with_mask="192.168.11.0/24"
+  gateway="192.168.11.1"
 
   if ! test 1 = "${#}"; then
     fail "Wrong number of arguments.  Just specify a short hostname."
@@ -44,7 +41,6 @@ function main() {
   if ! grep -qE "^${dec_byte}\.${dec_byte}\.${dec_byte}\.${dec_byte}\$" <<< "${ip_address}"; then
     fail "Invalid IP address:  '${ip_address}'"
   fi
-  ip_address="$(sed 's/192\.168\.11\./192.168.12./' <<< "${ip_address}")"
 
   case "${arch}" in
     'i386')
@@ -96,15 +92,21 @@ function main() {
 
 
 function mkvm() {
-  INTERFACE_NUMBER="${port}" IP_ADDRESS="${ip_address}" sudo -E "${self_path}"/mkvmnet up || fail "Failed to bring up networking for:  '${hostname}'"
   create_directories
+  info "Locking."
   lock
+  info "Bringing up networking."
+  INTERFACE_NUMBER="${port}" IP_ADDRESS="${ip_address}" sudo -E "${self_path}"/mkvmnet up || fail "Failed to bring up networking for:  '${hostname}'"
+  info "Preparing to bring up VM."
   remove_stale_files
   generate_preseed
   generate_installer_image
   generate_vm_image
+  info "Bringing up VM."
   launch_vm
+  info "Bringing down networking."
   INTERFACE_NUMBER="${port}" IP_ADDRESS="${ip_address}" sudo -E "${self_path}"/mkvmnet down || fail "Failed to bring down networking for:  '${hostname}'"
+  info "Unlocking."
   unlock
 }
 

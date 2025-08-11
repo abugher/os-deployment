@@ -29,6 +29,7 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 * Reorder these bullet points coherently.
 * Avoid prompting for sudo password a second time when bringing down networking.  (Maybe keep sudo active in a loop.  Maybe keep a root process alive and signal it when ready to bring down networking.)
+* mkvmnet should probably be a function within the mkvm script.  (Deduplicate some code.)
 * Implement enough virtual networking to test interoperability of VMs similar to production hosts.
 * Try to use the same subnet for VMs as the LAN uses.  (Requires NAT and some points below.)
 * Plan a dedicated user to run ansible deployments to test VMs (but not the test VMs themselves).

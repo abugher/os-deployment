@@ -1,0 +1,9 @@
+#!/bin/bash
+
+testvm_ssh_client='testvm-ssh-client'
+mark_num=1
+dest_ip="${1}"
+
+
+/usr/sbin/iptables -t mangle -A OUTPUT -m owner --uid-owner "${testvm_ssh_client}" -j MARK --set-mark "${mark_num}"
+/bin/ip rule fwmark "${mark_num}"
