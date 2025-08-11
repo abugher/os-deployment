@@ -15,6 +15,14 @@
 # will come back, then for 8 to 11 seconds pings will return.  Timing varies,
 # but that is the general pattern.
 #
+# Also probably related:  Ping to LAN (except gateway) seems to consistently
+# work.  I guess the routing table must be consulted to look up how to find a
+# LAN address, so the correct interface gets used.
+#
+# I thought the routing table would be consulted for every network connection.
+# I guess it is not consulted when a connection targets an address held by an
+# interface of this system.  That surprises me.  I wonder if it can be changed.
+#
 #
 # This script assumes that on this host NAT is only used for guest VMs.  Expect
 # problems if the host normally engages in NAT for other reasons.
