@@ -102,7 +102,6 @@ function mkvm() {
   generate_preseed
   generate_installer_image
   generate_vm_image
-  info "Bringing up VM."
   launch_vm
   info "Bringing down networking."
   INTERFACE_NUMBER="${port}" IP_ADDRESS="${ip_address}" sudo -E "${self_path}"/mkvmnet down || fail "Failed to bring down networking for:  '${hostname}'"
@@ -236,6 +235,7 @@ function launch_vm() {
   fi
   info "Launching VM."
   boot_this_image "${vm_image_used}"
+  info "VM is down."
 }
 
 
