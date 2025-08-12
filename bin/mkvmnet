@@ -2,28 +2,6 @@
 #
 # Make VM network - configure networking on this machine for VMs.
 #
-#
-# None of this works.  If I set the gateway address on an interface, but I also
-# set a route to a subnet including that address over a different interface,
-# then I start a network connection from this host to the gateway address, the
-# rout does not seem to be consulted, and the connection goes straight to the
-# interface on which the gateway address is set.  That is not what I thought
-# would happen.
-#
-# Probably related:  When I bring up the network for a test VM, then I ping
-# from host to internet, the result is flapping.  For 40 or 50 seconds nothing
-# will come back, then for 8 to 11 seconds pings will return.  Timing varies,
-# but that is the general pattern.
-#
-# Also probably related:  Ping to LAN (except gateway) seems to consistently
-# work.  I guess the routing table must be consulted to look up how to find a
-# LAN address, so the correct interface gets used.
-#
-# I thought the routing table would be consulted for every network connection.
-# I guess it is not consulted when a connection targets an address held by an
-# interface of this system.  That surprises me.  I wonder if it can be changed.
-#
-#
 # This script assumes that on this host NAT is only used for guest VMs.  Expect
 # problems if the host normally engages in NAT for other reasons.
 #
@@ -82,7 +60,7 @@ function down() {
 #  ip rule del fwmark "${interface_number}" table "${interface_number}" || fail "Failed to set rule for marked packets from test VM SSH client user."
 #  iptables -t mangle -D OUTPUT -m owner --uid-owner "${testvm_ssh_client}" -d "${ip_address}" -j MARK --set-mark "${interface_number}" || fail "Failed to unmark packets from SSH client user to test VM."
 #  iptables -t nat -D POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j MARK --set-mark "${interface_number}" || fail "Failed to unmark packets from test VM."
-#  iptables -t nat -D POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to deconfigure NAT."
+  iptables -t nat -D POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to deconfigure NAT."
   ip link delete "${interface}" || fail "Failed to delete TAP interface:  '${interface}'"
 
   ip route flush cache || fail "Failed to flush route cache."
@@ -98,7 +76,10 @@ function up() {
   ip address add "${host_internal_ip_address}/${host_internal_subnet_bits}" dev "${interface}" noprefixroute || fail "Failed to configure TAP interface."
   ip link set "${interface}" up || fail "Failed to bring up TAP interface."
 
-#  iptables -t nat -A POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to configure NAT."
+  # Above breaks networking for host.  Restore it.
+  ip route del table local "${host_internal_ip_address}" dev "${interface}"
+
+  iptables -t nat -A POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to configure NAT."
 ## This might need particular attention.
 #  iptables -t nat -A POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j MARK --set-mark "${interface_number}" || fail "Failed to mark packets from test VM." 
 #  iptables -t mangle -A OUTPUT -m owner --uid-owner "${testvm_ssh_client}" -d "${ip_address}" -j MARK --set-mark "${interface_number}" || fail "Failed to mark packets from SSH client user to test VM."
