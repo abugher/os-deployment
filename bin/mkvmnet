@@ -55,18 +55,6 @@ function main() {
 }
 
 
-function down() {
-#  ip route del "${ip_address}" dev "${interface}" src "${host_internal_ip_address}" table "${interface_number}" || fail "Failed to remove route for marked packets from test VM SSH client user."
-#  ip rule del fwmark "${interface_number}" table "${interface_number}" || fail "Failed to set rule for marked packets from test VM SSH client user."
-#  iptables -t mangle -D OUTPUT -m owner --uid-owner "${testvm_ssh_client}" -d "${ip_address}" -j MARK --set-mark "${interface_number}" || fail "Failed to unmark packets from SSH client user to test VM."
-#  iptables -t nat -D POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j MARK --set-mark "${interface_number}" || fail "Failed to unmark packets from test VM."
-  iptables -t nat -D POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to deconfigure NAT."
-  ip link delete "${interface}" || fail "Failed to delete TAP interface:  '${interface}'"
-
-  ip route flush cache || fail "Failed to flush route cache."
-}
-
-
 function up() {
   # Routing from host to internet gets broken when any test VM is up.
 
@@ -76,16 +64,33 @@ function up() {
   ip address add "${host_internal_ip_address}/${host_internal_subnet_bits}" dev "${interface}" noprefixroute || fail "Failed to configure TAP interface."
   ip link set "${interface}" up || fail "Failed to bring up TAP interface."
 
-  # Above breaks networking for host.  Restore it.
+  # It would be better to refrain from creating this route than to remove it like this.
   ip route del table local "${host_internal_ip_address}" dev "${interface}"
 
   iptables -t nat -A POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to configure NAT."
-## This might need particular attention.
-#  iptables -t nat -A POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j MARK --set-mark "${interface_number}" || fail "Failed to mark packets from test VM." 
-#  iptables -t mangle -A OUTPUT -m owner --uid-owner "${testvm_ssh_client}" -d "${ip_address}" -j MARK --set-mark "${interface_number}" || fail "Failed to mark packets from SSH client user to test VM."
 
-#  ip rule add fwmark "${interface_number}" table "${interface_number}" || fail "Failed to set rule for marked packets from test VM SSH client user."
-#  ip route add "${ip_address}" dev "${interface}" src "${host_internal_ip_address}" table "${interface_number}" || fail "Failed to add route for marked packets from test VM SSH client user."
+  # This doesn't seem to be working.  Is it necessary?
+  #iptables -t mangle -A POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j MARK --set-mark "${interface_number}" || fail "Failed to mark packets from test VM." 
+
+  iptables -t mangle -A OUTPUT -m owner --uid-owner "${testvm_ssh_client}" -d "${ip_address}" -j MARK --set-mark "${interface_number}" || fail "Failed to mark packets from SSH client user to test VM."
+  ip rule add fwmark "${interface_number}" table "${interface_number}" || fail "Failed to set rule for marked packets from test VM SSH client user."
+
+  # If src is specified, this yields:  "Error: Invalid prefsrc address."
+  ip route add "${ip_address}" dev "${interface}" table "${interface_number}" || fail "Failed to add route for marked packets from test VM SSH client user."
+
+  # I feel like there might be a need for another rule, here, to handle marked packets from the VM.  Review.
+  
+  ip route flush cache || fail "Failed to flush route cache."
+}
+
+
+function down() {
+  ip route del "${ip_address}" dev "${interface}" table "${interface_number}" || fail "Failed to remove route for marked packets from test VM SSH client user."
+  ip rule del fwmark "${interface_number}" table "${interface_number}" || fail "Failed to set rule for marked packets from test VM SSH client user."
+  iptables -t mangle -D OUTPUT -m owner --uid-owner "${testvm_ssh_client}" -d "${ip_address}" -j MARK --set-mark "${interface_number}" || fail "Failed to unmark packets from SSH client user to test VM."
+  # iptables -t mangle -D POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j MARK --set-mark "${interface_number}" || fail "Failed to unmark packets from test VM."
+  iptables -t nat -D POSTROUTING -s "${ip_address}" -o "${host_external_interface}" -j SNAT --to-source "${host_external_ip_address}" || fail "Failed to deconfigure NAT."
+  ip link delete "${interface}" || fail "Failed to delete TAP interface:  '${interface}'"
 
   ip route flush cache || fail "Failed to flush route cache."
 }

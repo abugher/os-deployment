@@ -1,0 +1,63 @@
+This idea seems questionable.  I want to create a duplicate of the LAN
+address space on the deployment/testing host, so that each production
+system can have a corresponding test VM with the same address, and a
+duplicate of the whole set of systems can be tested at once.  (I am
+trying to avoid the term "host" except for the system hosting guest
+VMs.)
+
+To start, that requires an interface with the same address as the
+gateway.  The host should still be able to reach and use the real
+gateway, but should also have means to route certain connections through
+the local interface with the same address to make SSH connections to
+VMs.
+
+I have started work on this, but it is getting confusing.  This document
+is being written to try to spell out the whole process in detail, so
+that I can see clearly what is working and what is not working, in order
+to eventually get it all working - or at least see clearly why it won't
+work.
+
+
+Connectivity checklist follows.  Each entry should be followed by a
+"reply" entry.  Replies to existing connections can exhibit distinct
+behavior from packets establishing a new connection.
+
+-       Undetermined.
+o       Does or should work.
+x       Does not or should not work.
+
+from            to              should work     does work
+____            __              ___________     _________
+
+host            gateway         -               -
+  reply                         -               -
+host            LAN system      -               -
+  reply                         -               -
+host            internet        -               -
+  reply                         -               -
+host            VM              -               -
+  reply                         -               -
+LAN system      gateway         -               -
+  reply                         -               -
+LAN system      host            -               -
+  reply                         -               -
+LAN system      internet        -               -
+  reply                         -               -
+LAN system      VM              -               -
+  reply                         -               -
+internet        host            -               -
+  reply                         -               -
+internet        gateway         -               -
+  reply                         -               -
+internet        LAN system      -               -
+  reply                         -               -
+internet        host            -               -
+  reply                         -               -
+VM              host            -               -
+  reply                         -               -
+VM              gateway         -               -
+  reply                         -               -
+VM              LAN system      -               -
+  reply                         -               -
+VM              internet        -               -
+  reply                         -               -
