@@ -18,32 +18,9 @@ to eventually get it all working - or at least see clearly why it won't
 work.
 
 
-Connectivity checklist follows.  Each entry should be followed by a
-"reply" entry.  Replies to existing connections can exhibit distinct
-behavior from packets establishing a new connection.
+General caveats:  Replies to existing connections can exhibit distinct
+behavior from packets establishing a new connection.  Be aware that some
+conditions can cause oscillating behavior, so that connections sometimes
+work and sometimes do not.
 
-?       Indeterminate
-+       Does or should work.
--       Does not or should not work.
-
-from                    to                      should work     does work
-____                    __                      ___________     _________
-
-host                    gateway                 +               ?
-  reply                                         +               ?
-host                    LAN system              +               ?
-  reply                                         +               ?
-host                    internet                +               ?
-  reply                                         +               ?
-host                    VM                      -               ?
-  reply                                         ?               ?
-testvm-ssh-client@host  VM                      +               ?
-  reply                                         +               ?
-VM                      host                    ?               ?
-  reply                                         ?               ?
-VM                      gateway                 ?               ?
-  reply                                         ?               ?
-VM                      LAN system              -               ?
-  reply                                         -               ?
-VM                      internet                +               ?
-  reply                                         +               ?
+See checklist.txt for current status.
