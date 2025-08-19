@@ -22,42 +22,28 @@ Connectivity checklist follows.  Each entry should be followed by a
 "reply" entry.  Replies to existing connections can exhibit distinct
 behavior from packets establishing a new connection.
 
--       Undetermined.
-o       Does or should work.
-x       Does not or should not work.
+?       Indeterminate
++       Does or should work.
+-       Does not or should not work.
 
-from            to              should work     does work
-____            __              ___________     _________
+from                    to                      should work     does work
+____                    __                      ___________     _________
 
-host            gateway         -               -
-  reply                         -               -
-host            LAN system      -               -
-  reply                         -               -
-host            internet        -               -
-  reply                         -               -
-host            VM              -               -
-  reply                         -               -
-LAN system      gateway         -               -
-  reply                         -               -
-LAN system      host            -               -
-  reply                         -               -
-LAN system      internet        -               -
-  reply                         -               -
-LAN system      VM              -               -
-  reply                         -               -
-internet        host            -               -
-  reply                         -               -
-internet        gateway         -               -
-  reply                         -               -
-internet        LAN system      -               -
-  reply                         -               -
-internet        host            -               -
-  reply                         -               -
-VM              host            -               -
-  reply                         -               -
-VM              gateway         -               -
-  reply                         -               -
-VM              LAN system      -               -
-  reply                         -               -
-VM              internet        -               -
-  reply                         -               -
+host                    gateway                 +               ?
+  reply                                         +               ?
+host                    LAN system              +               ?
+  reply                                         +               ?
+host                    internet                +               ?
+  reply                                         +               ?
+host                    VM                      -               ?
+  reply                                         ?               ?
+testvm-ssh-client@host  VM                      +               ?
+  reply                                         +               ?
+VM                      host                    ?               ?
+  reply                                         ?               ?
+VM                      gateway                 ?               ?
+  reply                                         ?               ?
+VM                      LAN system              -               ?
+  reply                                         -               ?
+VM                      internet                +               ?
+  reply                                         +               ?
