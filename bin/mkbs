@@ -26,7 +26,13 @@ fi
 if test 'set' = "${2:+set}"; then
   release="${2}"
 else
-  fail 'Specify a Devuan release code name.'
+  fail 'Specify a release code name.'
+fi
+
+if test 'set' = "${3:+set}"; then
+  mirror="${3}"
+else
+  unset mirror
 fi
 
 host=bootstick

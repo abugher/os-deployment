@@ -4,6 +4,11 @@
 function initialize_os() {
    mkdir -p "${HOME}"/tmp/debootstrap_cache \
     || fail "Failed to create cache directory."
-  sudo debootstrap --cache-dir "${HOME}"/tmp/debootstrap_cache --arch=amd64 "${release}" "${target_mount_point}"/ \
-    || fail "Failed to write OS."
+  if test 'set' = "${mirror:+set}"; then
+    sudo debootstrap --cache-dir "${HOME}"/tmp/debootstrap_cache --arch=amd64 "${release}" "${target_mount_point}"/ "${mirror}" \
+      || fail "Failed to write OS."
+  else
+    sudo debootstrap --cache-dir "${HOME}"/tmp/debootstrap_cache --arch=amd64 "${release}" "${target_mount_point}"/ \
+      || fail "Failed to write OS."
+  fi
 }
