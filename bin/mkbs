@@ -40,8 +40,8 @@ host=bootstick
 efi="${device}"2
 boot="${device}"3
 pv="${device}"4
-luks="${host}_${device##*/}_crypt"
-vg="${host}_${device##*/}"
+luks="${host}_crypt"
+vg="${host}"
 
 target_mount_point=/mnt/"${host}_${device##*/}"
 
