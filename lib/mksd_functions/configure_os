@@ -95,15 +95,16 @@ function fix_network() {
     || fail "Failed to read WPA PSK from pass."
 
   output "Templating network interface configuration."
-  if test 'static' = $network_addressing; then
-    template wireless_interface_conf_static /etc/network/interfaces.d/"${wireless_interface}"
-  elif test 'dhcp' = $network_addressing; then
-    template wireless_interface_conf_dhcp /etc/network/interfaces.d/"${wireless_interface}"
-  else
-    fail "\$network_addressing not set or invalid.  (${network_addressing})"
-  fi
-  template wired_interface_conf /etc/network/interfaces.d/"${wired_interface}"
-  template master_interfaces_conf /etc/network/interfaces
+#  if test 'static' = $network_addressing; then
+#    template wireless_interface_conf_static /etc/network/interfaces.d/"${wireless_interface}"
+#  elif test 'dhcp' = $network_addressing; then
+#    template wireless_interface_conf_dhcp /etc/network/interfaces.d/"${wireless_interface}"
+#  else
+#    fail "\$network_addressing not set or invalid.  (${network_addressing})"
+#  fi
+#  template wired_interface_conf /etc/network/interfaces.d/"${wired_interface}"
+#  template master_interfaces_conf /etc/network/interfaces
+  template NetworkManager/wired-static "/etc/NetworkManager/system-connections/${wired_interface}.nmconnection"
 
   if test 'set' = "${disable_predictable_ifnames_for_armbian:+set}"; then
     output "Disabling predictable network interface naming in:  /boot/armbianEnv.txt"

@@ -51,6 +51,7 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 * Codify relationship between `mkvm` and `mkvmnet`.  (Maybe declare success when the net is up, then `mkvm` should check for success before trying to run.)
 * Differentiate testing all hosts as test VMs together from testing one host as a test VM with access to real hosts.  (Determine whether the second is possible and/or reasonable to implement.)
 * Consider how to deal with hosts outside the LAN, specifically neuron-mail, as test VMs.  (Static routes inside the test VM network for the out-of-LAN ip address, maybe.)
+* Get all network configuration variables from ansible inventory.
 
 # Requirements
 
