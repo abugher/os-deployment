@@ -26,5 +26,4 @@ null_link_files+=(
   '/lib/systemd/system/armbian-firstrun-config.service'
   '/lib/systemd/system/armbian-firstrun.service'
   '/lib/systemd/system/armbian-resize-filesystem.service'
-  '/lib/systemd/system/sockets.target'
 )

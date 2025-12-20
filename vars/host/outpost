@@ -2,6 +2,6 @@
 
 hardware='raspberry_pi'
 os='raspios'
-active_interface_type='wireless'
-network_addressing='static'
-network_name='puppies'
+#active_interface_type='wireless'
+#network_addressing='static'
+#network_name='puppies'
