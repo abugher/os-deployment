@@ -105,6 +105,7 @@ function fix_network() {
 #  template wired_interface_conf /etc/network/interfaces.d/"${wired_interface}"
 #  template master_interfaces_conf /etc/network/interfaces
   template NetworkManager/wired-static "/etc/NetworkManager/system-connections/${wired_interface}.nmconnection"
+  template NetworkManager/wireless-static "/etc/NetworkManager/system-connections/${wireless_interface}.nmconnection"
 
   if test 'set' = "${disable_predictable_ifnames_for_armbian:+set}"; then
     output "Disabling predictable network interface naming in:  /boot/armbianEnv.txt"
