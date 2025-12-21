@@ -6,7 +6,7 @@ interface-name=${wireless_interface}
 
 [wifi]
 mode=infrastructure
-ssid=${network-name}
+ssid=${network_name}
 
 [wifi-security]
 key-mgmt=wpa-psk
