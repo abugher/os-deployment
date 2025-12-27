@@ -41,6 +41,9 @@ root_partition="${card_device}${root_partition_index}"
 if test 'set' = "${boot_partition_index:+set}"; then
   boot_partition="${card_device}${boot_partition_index}"
 fi
+if test 'set' = "${firmware_partition_index:+set}"; then
+  firmware_partition="${card_device}${firmware_partition_index}"
+fi
 big_partition="${card_device}${big_partition_index}"
 
 ansible_host_vars_file="../ansible/inventory/inventory.d/host_vars/${host}.yml"

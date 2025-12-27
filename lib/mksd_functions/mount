@@ -26,6 +26,12 @@ function unmount_nonroot() {
     eval sudo umount '"${target_mount_point}/boot"' ">&${debug_level_command_output}" \
       || fail "Failed to unmount boot partition."
   fi
+
+  if test 'set' = "${firmware_partition:+set}"; then
+    output "Unmounting:  ${target_mount_point}/boot/firmware"
+    eval sudo umount '"${target_mount_point}/boot/firmware"' ">&${debug_level_command_output}" \
+      || fail "Failed to unmount firmware partition."
+  fi
 }
 
 
@@ -43,6 +49,14 @@ function mount_nonroot() {
     eval sudo mkdir -p '"${target_mount_point}/boot"' ">&${debug_level_command_output}"
     eval sudo mount '"${boot_partition}" "${target_mount_point}/boot"' ">&${debug_level_command_output}" \
       || fail "Failed to mount boot partition."
+  fi
+
+  if test 'set' = "${firmware_partition:+set}"; then
+    output "Mounting:  ${firmware_partition}"
+    output "  ... on:  ${target_mount_point}/boot/firmware"
+    eval sudo mkdir -p '"${target_mount_point}/boot/firmware"' ">&${debug_level_command_output}"
+    eval sudo mount '"${firmware_partition}" "${target_mount_point}/boot/firmware"' ">&${debug_level_command_output}" \
+      || fail "Failed to mount firmware partition."
   fi
 
   if test 'set' = "${use_big_partition:+set}"; then
