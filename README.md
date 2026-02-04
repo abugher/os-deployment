@@ -28,6 +28,12 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 ### To Do:
 
 
+#### architecture and OS:
+
+* Initial implementation should launch staging VMs with same architecture as the host system and basic Debian, for simplicity.
+* When that is working, change to launching staging VMs with same architecture and OS as production counterparts.
+
+
 #### networking:
 
 * Replicate production (real) LAN as a staging LAN in qemu, only connecting VMs to each other.  (192.168.11.0/24)
