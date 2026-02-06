@@ -42,6 +42,14 @@ function main() {
   if ! grep -qE "^${dec_byte}\.${dec_byte}\.${dec_byte}\.${dec_byte}\$" <<< "${ip_address}"; then
     fail "Invalid IP address:  '${ip_address}'"
   fi
+#  port="$(awk '/^ssh_unique_port/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
+#  if ! grep -qE '^[0-9]+$' <<< "${port}"; then
+#    fail "Invalid port number:  '${port}'"
+#  fi
+  # See `man qemu` and search for "hostfwd=".
+  hostport='2200'
+  guestport='22'
+
 
   case "${arch}" in
     'i386')
@@ -185,6 +193,8 @@ function generate_preseed() {
   info "Generating preseed file."
   cp "${preseed_template_file}" "${preseed_generated_file}" || fail "Failed to copy preseed file."
   sed -i "s/password \$/password $(pass show "${pass_path}")/" "${preseed_generated_file}" || fail "Failed to inject password into preseed file."
+  # Would it be better to use the full contents of the key file, including the
+  # beginning and ending lines?
   ssh_host_key_private="$(while read line; do if ! grep -q -- '-----' <<< "${line}"; then printf "%s" "${line}"; fi; done < "${ssh_host_key_private_file}")" || fail "Failed to read SSH private key."
   sed -i "s#ssh_host_key_private#${ssh_host_key_private}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key into preseed file."
   ssh_host_key_public="$(cat "${ssh_host_key_public_file}")" || fail "Failed to read SSH public key."
@@ -249,7 +259,7 @@ boot_this_image() {
   net_args=()
   if test 'gateway' = "${hostname}"; then
   net_args+=(
-    -netdev user,id="${upstream_net_id}"
+    -netdev user,id="${upstream_net_id}",hostfwd=::"${hostport}"-:"${guestport}"
     -device virtio-net-pci,netdev="${upstream_net_id}"
   )
   fi
