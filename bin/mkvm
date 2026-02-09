@@ -42,13 +42,10 @@ function main() {
   if ! grep -qE "^${dec_byte}\.${dec_byte}\.${dec_byte}\.${dec_byte}\$" <<< "${ip_address}"; then
     fail "Invalid IP address:  '${ip_address}'"
   fi
-#  port="$(awk '/^ssh_unique_port/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
-#  if ! grep -qE '^[0-9]+$' <<< "${port}"; then
-#    fail "Invalid port number:  '${port}'"
-#  fi
-  # See `man qemu` and search for "hostfwd=".
-  hostport='2200'
-  guestport='22'
+  ssh_unique_port="$(awk '/^ssh_unique_port/ {print $2}' "${control_center}"/ansible/inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
+  if ! grep -qE '^[0-9]+$' <<< "${ssh_unique_port}"; then
+    fail "Invalid SSH unique port number:  '${ssh_unique_port}'"
+  fi
 
 
   case "${arch}" in
@@ -92,7 +89,7 @@ function main() {
       mkvm
       ;;
     sshvm)
-      sshvm
+      sshvm root@"staging-${hostname}"
       ;;
     *)
       fail "I don't know how to be '${self_name}'."
@@ -199,6 +196,8 @@ function generate_preseed() {
   sed -i "s#ssh_host_key_private#${ssh_host_key_private}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key into preseed file."
   ssh_host_key_public="$(cat "${ssh_host_key_public_file}")" || fail "Failed to read SSH public key."
   sed -i "s#ssh_host_key_public#${ssh_host_key_public}#" "${preseed_generated_file}" || fail "Failed to inject SSH public key into preseed file."
+  ssh_authorized_key="$(cat ~/.ssh/id_rsa.pub)" || fail "Failed to read SSH authorized key (this user's public key)."
+  sed -i "s#ssh_authorized_key#${ssh_authorized_key}#" "${preseed_generated_file}" || fail "Failed to inject SSH authorized key into preseed file."
   touch "${success_file_preseed}" || fail "Failed to declare success after generating preseed file."
   sed -i "s/ip_address\$/${ip_address}/" "${preseed_generated_file}" || fail "Failed to inject IP address into preseed file."
   if ! test 'gateway' = "${hostname}"; then
@@ -259,7 +258,7 @@ boot_this_image() {
   net_args=()
   if test 'gateway' = "${hostname}"; then
   net_args+=(
-    -netdev user,id="${upstream_net_id}",hostfwd=::"${hostport}"-:"${guestport}"
+    -netdev user,id="${upstream_net_id}",hostfwd=::"${ssh_unique_port}"-:22
     -device virtio-net-pci,netdev="${upstream_net_id}"
   )
   fi
@@ -289,7 +288,7 @@ boot_this_image() {
 
 function wait_for_ssh() {
   while 
-    ! sshvm whoami > /dev/null 2>&1
+    ! sshvm root@staging-"${host}" whoami > /dev/null 2>&1
   do
     echo -n '.'
     sleep 1
@@ -298,14 +297,11 @@ function wait_for_ssh() {
 
 
 function sshvm() {
-#  sshpass \
-#    -d 3 \
-#    ssh \
-#      -p "${port}" \
-#      root@127.0.0.1 \
-#      "${@}" \
-#    3< <(pass show "${pass_path}")
-  false
+  sshpass \
+    -d 3 \
+    ssh \
+      "${@}" \
+    3< <(pass show "${pass_path}")
 }
 
 
