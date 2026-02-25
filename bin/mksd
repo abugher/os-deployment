@@ -46,7 +46,7 @@ if test 'set' = "${firmware_partition_index:+set}"; then
 fi
 big_partition="${card_device}${big_partition_index}"
 
-ansible_host_vars_file="../ansible/inventory/inventory.d/host_vars/${host}.yml"
+ansible_host_vars_file="../ansible-inventory/inventory.d/host_vars/${host}.yml"
 eval $(awk -F '[: ]*' '/ip_address/ {print $1"="$2}' "${ansible_host_vars_file}")
 test 'set' = "${ip_address:+set}" \
   || fail "\$ip_address not set."
