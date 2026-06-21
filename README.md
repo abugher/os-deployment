@@ -19,62 +19,7 @@ Deploy an OS to a USB storage device by running debootstrap then making modifica
 
 ## mkvm
 
-    bin/mkvm <hostname>
-    bin/runvm <hostname>
-    bin/sshvm <hostname>
-
-Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH port specified in ansible host variables for the named host.  The SSH host key for the named host should be automatically installed as the SSH host key for the VM.  The root password for the named host should be set on the VM.
-
-### To Do:
-
-
-#### architecture and OS:
-
-* Initial implementation should launch staging VMs with same architecture as the host system and basic Debian, for simplicity.
-* When that is working, change to launching staging VMs with same architecture and OS as production counterparts.
-
-
-#### networking:
-
-* Replicate production (real) LAN as a staging LAN in qemu, only connecting VMs to each other.  (192.168.11.0/24)
-* Implement an additional subnet for a staging mail server, replicating the production mail server addres.
-* Implement a NAT gateway VM using a different subnet to connect to the host system.  (10.0.0.0/8, probably)
-* Implement a dedicated ansible master host attached to the staging LAN, reachable by port forwarding through the gateway.
-* Ensure that within the staging LAN packets are never sent directly to the production LAN.
-* Ensure that within the staging LAN packets for the mail server are sent to the staging mail server.
-* Decide whether internet access via the gateway is beneficial and/or necessary.
-
-
-#### code management:
-
-* Create or modify an ansible role to install requisites for mkvm to run.  (Install iptables, iproute2, and qemu packages.)
-* Review code and comments for correctness, unused code, redundancy, and aesthetics.
-
-
-#### preseed security:
-
-* Consider safe handling of preseed file.  Maybe instead of keeping it, delete it every time, but keep a checksum to detect change.  (The preseed configuration includes SSH private key and root password in plaintext.)
-* Find a way to securely use the installer image for production deployment.  (The preseed configuration includes SSH private key and root password in plaintext.  It should not be burned to CD or made available via PXE network boot.)
-
-
-#### information lookup:
-
-* Replace reference to control-center/stg with a path-to-self lookup.
-* Retrieve information from ansible inventory in a better way.  (Right now it is done by interpreting text and makes assumptions about formatting.  It would be better to ask ansible to show the values of the host variables.  `ansible-inventory` may be able to do so.)
-* Look up network, netmask, gateway, and DNS server from inventory.  (Right now they are static in the preseed template, in qemu invocation, and in network configuration scripting.)
-* Look up network interface name from live configuration.  (Right now it is hardcoded in `mkvmnet`.)
-* Get all network configuration variables from ansible inventory.
-* Look up release, version, architecture, and resource specifications from host variables.  (Also make sure these reflect and will continue to reflect the production hosts.)
-
-
-#### extended scope:
-
-* Write some code for the following in the `control-center` and `ansible` repos.
-* Implement ansible testing using this tool.  (Making sure Nagios shows all green is a good start.  If more testing is necessary, it should probably be added to Nagios, anyway.)
-* Implement pre-deployment testing in ansible using VMs deployed this way.  (Same as above?)
-* Differentiate testing all hosts as test VMs together from testing one host as a test VM with access to real hosts.  (Determine whether the second is possible and/or reasonable to implement.)
-* Exclude untestable roles from testing.  Some roles require hardware that may not be feasible to emulate, like a specific printer model.
-* Download (torrent) original installer image automatically.
+See [dedicated README](notes/mkvm/README.md).
 
 
 # Requirements
@@ -101,14 +46,7 @@ Deploy an OS to a VM.  The VM should be reachable by SSH on localhost at the SSH
 
 ## mkvm
 
-| COMMAND             | PACKAGE         |
-| :------             | :------         |
-|7zz                  | 7zip            |
-|genisoimage          | genisoimage     |
-|cpio                 | cpio            |
-|isohybrid            | syslinux-utils  |
-|qemu-system-x86\_64  | qemu-system     |
-|sshpass              | sshpass         |
+See [dedicated README](notes/mkvm/README.md#requirements).
 
 
 # Bugs:
@@ -151,7 +89,7 @@ to keep it from expiring.
 
 The scripts should work regardless of current working directory.
 
-## 
+##
 
 mksd should generate a new image in a file instead of on a storage device.  It
 might do so only if the upstream image is newer.  It might also still write the
