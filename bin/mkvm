@@ -10,6 +10,10 @@ function main() {
   self_path="${0%/*}"
 
   #arch='armhf'
+  installer_images_original='/storage/bittorrent/content'
+  # netinst does not even install sshd.
+  #installer_type='netinst'
+  installer_type='DVD-1'
   arch='amd64'
   os='debian'
   release='trixie'
@@ -31,6 +35,9 @@ function main() {
     fail "Wrong number of arguments.  Just specify a short hostname."
   fi
   hostname="${1}"
+
+  qemu_log='/dev/null'
+  #qemu_log="/tmp/mkvm.qemu.${hostname}.log"
 
   mac_address="$(awk '/^mac_address/ {print $2}' "${control_center}"/ansible-inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
   hex_byte='[a-fA-F0-9]{2}'
@@ -75,10 +82,12 @@ function main() {
   preseed_generated_dir=~/.mkvm/preseed/"${hostname}"
   # I think this has to be named "preseed.cfg".
   preseed_generated_file="${preseed_generated_dir}/preseed.cfg"
-  installer_images=~/.mkvm/installer_images
-  installer_image_original="/storage/bittorrent/content/${os}-${version}-${arch}-netinst.iso"
-  installer_image_generated="${installer_images}/${hostname}.iso"
-  unpack=~/.mkvm/"installer_unpack/${hostname}"
+  installer_images_generated=~/.mkvm/installer_images_generated
+  installer_image_name_original="${os}-${version}-${arch}-${installer_type}.iso"
+  installer_image_original="${installer_images_original}/${installer_image_name_original}"
+  installer_image_name_generated="${hostname}.${installer_image_name_original}"
+  installer_image_generated="${installer_images_generated}/${installer_image_name_generated}"
+  unpack=~/.mkvm/"installer_unpack/${installer_image_name_generated}"
   vm_image_clean_dir=~/.mkvm/vm_images_clean
   vm_image_clean="${vm_image_clean_dir}/${hostname}.qcow"
   vm_image_used_dir=~/.mkvm/vm_images_used
@@ -177,7 +186,7 @@ function create_directories() {
   mkdir -p "${unpack}" || fail "Failed to create installer unpack directory:  '${unpack}'"
   mkdir -p "${vm_image_clean_dir}" || fail "Failed to create images directory:  '${vm_image_clean_dir}'"
   mkdir -p "${vm_image_used_dir}" || fail "Failed to create images directory:  '${vm_image_clean_dir}'"
-  mkdir -p "${installer_images}" || fail "Failed to create images directory:  '${vm_image_clean_dir}'"
+  mkdir -p "${installer_images_generated}" || fail "Failed to create images directory:  '${vm_image_clean_dir}'"
 }
 
 
@@ -266,8 +275,10 @@ boot_this_image() {
     -device virtio-net-pci,netdev="${local_net_id}",mac="${mac_address}"
     -netdev socket,id="${local_net_id}",mcast="${mcast}"
   )
-
   shift 1
+
+  printf '%s\n'  "DEBUG:  net_args='${net_args[@]}'" >&2
+
   qemu-system-x86_64 \
     -name "${vm}" \
     -machine accel=kvm \
@@ -278,7 +289,7 @@ boot_this_image() {
     -vga virtio \
     "${image_file}" \
     "${@}" \
-    > /dev/null \
+    > "${qemu_log}" 2>&1 \
     < /dev/null \
   ;
   # -hda "${image_file}"
