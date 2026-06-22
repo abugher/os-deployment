@@ -1,0 +1,5 @@
+  echo 'net.ipv4.ip_forward = 1' > /target/etc/sysctl.d/gateway.conf; \
+  echo 'ip addr add 192.168.11.1/24 dev ens4' > /target/usr/local/bin/gateway; \
+  echo 'ip link set ens4 up' >> /target/usr/local/bin/gateway; \
+  chmod 0755 /target/usr/local/bin/gateway; \
+  echo '@reboot root /usr/local/bin/gateway' > /target/etc/cron.d/gateway ; \

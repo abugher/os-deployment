@@ -9,9 +9,12 @@ function main() {
   self_name="${0##*/}"
   self_path="${0%/*}"
 
+  # domain should come from inventory.
+  domain='neuronpointer.net'
   #arch='armhf'
-  installer_images_original='/storage/bittorrent/content'
-  # netinst does not even install sshd.
+  #installer_images_original='/storage/bittorrent/content'
+  installer_images_original=~/tmp
+  # Without network, netinst does not even install sshd.
   #installer_type='netinst'
   installer_type='DVD-1'
   arch='amd64'
@@ -77,7 +80,7 @@ function main() {
   success_file_preseed="${success_dir}/preseed"
   success_file_installer_image="${success_dir}/installer_image"
   success_file_vm_image="${success_dir}/vm_image"
-  preseed_template_dir="${control_center}"/os-deployment/conf
+  preseed_template_dir="${control_center}"/os-deployment/preseed
   preseed_template_file="${preseed_template_dir}/${arch}-${os}-${release}.cfg"
   preseed_generated_dir=~/.mkvm/preseed/"${hostname}"
   # I think this has to be named "preseed.cfg".
@@ -196,11 +199,27 @@ function generate_preseed() {
     return 0
   fi
   rm -f "${success_file_preseed}" || fail "Failed to remove success declaration for preseed file."
+
   info "Generating preseed file."
   cp "${preseed_template_file}" "${preseed_generated_file}" || fail "Failed to copy preseed file."
-  sed -i "s/password \$/password $(pass show "${pass_path}")/" "${preseed_generated_file}" || fail "Failed to inject password into preseed file."
-  # Would it be better to use the full contents of the key file, including the
-  # beginning and ending lines?
+
+  if test 'gateway' = "${hostname}"; then
+    cat "${preseed_template_dir}/gateway/late.txt" >> "${preseed_generated_file}" || fail "Failed to add late commands for gateway."
+  else
+    cat "${preseed_template_dir}/non-gateway/late.txt" >> "${preseed_generated_file}" || fail "Failed to add late commands for non-gateway."
+  fi
+  echo '  true;' >> "${preseed_generated_file}" || fail "Failed to terminate late command string."
+  if test 'gateway' = "${hostname}"; then
+    cat "${preseed_template_dir}/gateway/netcfg.txt" >> "${preseed_generated_file}" || fail "Failed to add netcfg configuration for gateway."
+  else
+    cat "${preseed_template_dir}/non-gateway/netcfg.txt" >> "${preseed_generated_file}" || fail "Failed to add netcfg configuration for non-gateway."
+  fi
+
+  sed -i "s/password unspecified-password\$/password $(pass show "${pass_path}")/" "${preseed_generated_file}" || fail "Failed to inject password into preseed file."
+  # BUG:  It would be better to use the full contents of the key file,
+  # including the beginning and ending lines.  "RSA PRIVATE KEY" != "OPENSSH
+  # PRIVATE KEY".  sshd can handle either, but only if the labeling matches the
+  # key.
   ssh_host_key_private="$(while read line; do if ! grep -q -- '-----' <<< "${line}"; then printf "%s" "${line}"; fi; done < "${ssh_host_key_private_file}")" || fail "Failed to read SSH private key."
   sed -i "s#ssh_host_key_private#${ssh_host_key_private}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key into preseed file."
   ssh_host_key_public="$(cat "${ssh_host_key_public_file}")" || fail "Failed to read SSH public key."
@@ -209,9 +228,8 @@ function generate_preseed() {
   sed -i "s#ssh_authorized_key#${ssh_authorized_key}#" "${preseed_generated_file}" || fail "Failed to inject SSH authorized key into preseed file."
   touch "${success_file_preseed}" || fail "Failed to declare success after generating preseed file."
   sed -i "s/ip_address\$/${ip_address}/" "${preseed_generated_file}" || fail "Failed to inject IP address into preseed file."
-  if ! test 'gateway' = "${hostname}"; then
-    sed -i 's/^#d-i netcfg/d-i netcfg/'  "${preseed_generated_file}" || fail "Failed to disable IP autoconfiguration."
-  fi
+  sed -i "s/unassigned-hostname\$/${hostname}/" "${preseed_generated_file}" || fail "Failed to inject hostname into preseed file."
+  sed -i "s/unassigned-domain\$/${domain}/" "${preseed_generated_file}" || fail "Failed to inject domain into preseed file."
 }
 
 
