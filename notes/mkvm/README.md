@@ -85,11 +85,11 @@ address space, isolated from the real LAN.
 When a staging VM reaches out to neuron, packets should reach the
 staging system named neuron, not the real neuron.
 
-The host system should be able to reach at least the gateway at
-staging-gateway, and possibly other systems, for example staging-neuron
-.  Configuration for qemu and SSH should facilitate that.  Internal to
-the staging environment, the real hostnames should be used, for example
-gateway and neuron .
+The host system should be able to reach the gateway by SSH at staging-gateway.
+Configuration for qemu and SSH should facilitate that.  An SSH tunnel through
+staging-gateway, exposing the unique SSH port of a target host, should
+facilitate reaching other hosts in a similar way, for example staging-neuron,
+if required or desired.
 
 
 ## Networking Goals

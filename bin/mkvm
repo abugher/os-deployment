@@ -39,9 +39,6 @@ function main() {
   fi
   hostname="${1}"
 
-  qemu_log='/dev/null'
-  #qemu_log="/tmp/mkvm.qemu.${hostname}.log"
-
   mac_address="$(awk '/^mac_address/ {print $2}' "${control_center}"/ansible-inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
   hex_byte='[a-fA-F0-9]{2}'
   if ! grep -qE "^${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}\$" <<< "${mac_address}"; then
@@ -216,12 +213,30 @@ function generate_preseed() {
   fi
 
   sed -i "s/password unspecified-password\$/password $(pass show "${pass_path}")/" "${preseed_generated_file}" || fail "Failed to inject password into preseed file."
-  # BUG:  It would be better to use the full contents of the key file,
-  # including the beginning and ending lines.  "RSA PRIVATE KEY" != "OPENSSH
-  # PRIVATE KEY".  sshd can handle either, but only if the labeling matches the
-  # key.
-  ssh_host_key_private="$(while read line; do if ! grep -q -- '-----' <<< "${line}"; then printf "%s" "${line}"; fi; done < "${ssh_host_key_private_file}")" || fail "Failed to read SSH private key."
-  sed -i "s#ssh_host_key_private#${ssh_host_key_private}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key into preseed file."
+
+  # "BEGIN RSA PRIVATE KEY" != "BEGIN OPENSSH PRIVATE KEY" != "BEGIN PRIVATE
+  # KEY".  sshd can handle any of those, but only if the begin and end lines
+  # match the key encoding.  Identify the begin line, the end line, and the
+  # encoded key, and inject all of those into the preseed file.
+  ssh_host_key_private_begin="$(
+    grep -- '-----' "${ssh_host_key_private_file}" | head -n 1
+  )" || fail "Failed to read SSH private key begin line."
+  ssh_host_key_private_body="$(
+    while read line; do 
+      if ! grep -q -- '-----' <<< "${line}"; then 
+        # Strip newlines to facilitate injection into the preseed file.
+        printf "%s" "${line}"
+      fi
+    done < "${ssh_host_key_private_file}"
+  )" || fail "Failed to read SSH private key."
+  ssh_host_key_private_end="$(
+    grep -- '-----' "${ssh_host_key_private_file}" | tail -n 1
+  )" || fail "Failed to read SSH private key begin line."
+
+  sed -i "s#ssh_host_key_private_begin#${ssh_host_key_private_begin}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key begin line into preseed file."
+  sed -i "s#ssh_host_key_private_body#${ssh_host_key_private_body}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key body into preseed file."
+  sed -i "s#ssh_host_key_private_end#${ssh_host_key_private_end}#" "${preseed_generated_file}" || fail "Failed to inject SSH private key end line into preseed file."
+
   ssh_host_key_public="$(cat "${ssh_host_key_public_file}")" || fail "Failed to read SSH public key."
   sed -i "s#ssh_host_key_public#${ssh_host_key_public}#" "${preseed_generated_file}" || fail "Failed to inject SSH public key into preseed file."
   ssh_authorized_key="$(cat ~/.ssh/id_rsa.pub)" || fail "Failed to read SSH authorized key (this user's public key)."
@@ -295,8 +310,6 @@ boot_this_image() {
   )
   shift 1
 
-  printf '%s\n'  "DEBUG:  net_args='${net_args[@]}'" >&2
-
   qemu-system-x86_64 \
     -name "${vm}" \
     -machine accel=kvm \
@@ -305,13 +318,10 @@ boot_this_image() {
     -m "${mem_mb}" \
     "${net_args[@]}" \
     -vga virtio \
+    -display none \
     "${image_file}" \
     "${@}" \
-    > "${qemu_log}" 2>&1 \
-    < /dev/null \
   ;
-  # -hda "${image_file}"
-  # -vga none
 }
 
 
