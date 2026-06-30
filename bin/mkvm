@@ -92,7 +92,7 @@ function main() {
       isohybrid='yes'
       qemu_args_architecture=( 
           '-machine'    'accel=kvm' 
-          '-cpu'        'Broadwell-v4' )
+          '-cpu'        'kvm32' )
       #qemu_vga='virtio'
       qemu_device_storage_main='ide-hd'
       qemu_device_storage_optical='ide-cd'
@@ -120,7 +120,7 @@ function main() {
       # ready to test the above concept.
       qemu_args_architecture=( 
           '-machine'    'accel=kvm' 
-          '-cpu'        'Broadwell-v4' )
+          '-cpu'        'kvm64' )
       # "virtio" is nicer for graphical control, but "std" also works, and may
       # actually be easier to manage for curses-based installers.  ("virtio"
       # resizes the output, which can confuse curses.  "std" uses fixed height
@@ -427,7 +427,7 @@ boot_vm() {
   )
   if ! test '' == "${qemu_bootindex_optical}"; then
     qemu_args_storage+=(
-      '-drive'          "file=${qemu_image_optical},if=none,id=optical_storage"
+      '-drive'          "file=${qemu_image_optical},if=none,id=optical_storage,format=raw,read-only=on"
       '-device'         "${qemu_device_storage_optical},drive=optical_storage,bootindex=${qemu_bootindex_optical}"
     )
   fi
@@ -452,11 +452,7 @@ boot_vm() {
     "${qemu_args_storage[@]}"
   )
 
-  #for word in ${qemu} ${qemu_args[@]}; do
-  #  info "qemu invocation:  ${word}"
-  #done
-
-  info "qemu invocation:  ${qemu} ${qemu_args[*]}"
+  #info "qemu invocation:  ${qemu} ${qemu_args[*]}"
 
   "${qemu}" "${qemu_args[@]}"; ret="${?}"
 
