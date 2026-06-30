@@ -9,14 +9,26 @@ function main() {
   self_name="${0##*/}"
   self_path="${0%/*}"
 
+  control_center="${self_path}/../.."
+
+  inventory_repo="${control_center}/ansible-inventory"
+  inventory="${inventory_repo}/inventory.d"
+  host_vars="${inventory}/host_vars/${hostname}.yml"
+  host_files="${inventory_repo}/hosts/${hostname}/files"
+
+  sensitive_inventory_repo="${control_center}/sensitive-ansible-inventory"
+  sensitive_inventory="${sensitive_inventory_repo}/inventory.d"
+  sensitive_host_vars="${sensitive_inventory}/host_vars/${hostname}.yml"
+  sensitive_host_files="${sensitive_inventory_repo}/hosts/${hostname}/files"
+
   # domain should come from inventory.
   domain='neuronpointer.net'
-  #arch='armhf'
   #installer_images_original='/storage/bittorrent/content'
   installer_images_original=~/tmp
   # Without network, netinst does not even install sshd.
   #installer_type='netinst'
   installer_type='DVD-1'
+  #arch='armhf'
   arch='amd64'
   os='debian'
   release='trixie'
@@ -24,7 +36,6 @@ function main() {
   mem_gb='4'
   mem_mb="$(( mem_gb * 1024 ))"
   vm_image_size='10G'
-  control_center="${self_path}"/../..
   cpu_core_count=4
   subnet_with_mask="192.168.11.0/24"
   gateway="192.168.11.1"
@@ -39,17 +50,17 @@ function main() {
   fi
   hostname="${1}"
 
-  mac_address="$(awk '/^mac_address/ {print $2}' "${control_center}"/ansible-inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
+  mac_address="$(awk '/^mac_address/ {print $2}' "${host_vars}" | head -n 1 | sed "s/['\"]//g")"
   hex_byte='[a-fA-F0-9]{2}'
   if ! grep -qE "^${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}:${hex_byte}\$" <<< "${mac_address}"; then
     fail "Invalid MAC address:  '${mac_address}'"
   fi
-  ip_address="$(awk '/^ip_address/ {print $2}' "${control_center}"/ansible-inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
+  ip_address="$(awk '/^ip_address/ {print $2}' "${host_vars}" | head -n 1 | sed "s/['\"]//g")"
   dec_byte='([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
   if ! grep -qE "^${dec_byte}\.${dec_byte}\.${dec_byte}\.${dec_byte}\$" <<< "${ip_address}"; then
     fail "Invalid IP address:  '${ip_address}'"
   fi
-  ssh_unique_port="$(awk '/^ssh_unique_port/ {print $2}' "${control_center}"/ansible-inventory/inventory.d/host_vars/"${hostname}".yml | head -n 1 | sed "s/['\"]//g")"
+  ssh_unique_port="$(awk '/^ssh_unique_port/ {print $2}' "${host_vars}" | head -n 1 | sed "s/['\"]//g")"
   if ! grep -qE '^[0-9]+$' <<< "${ssh_unique_port}"; then
     fail "Invalid SSH unique port number:  '${ssh_unique_port}'"
   fi
@@ -69,8 +80,8 @@ function main() {
 
   pass_path="aaron/${hostname}/root"
   pass_file=~/.password-store/"${pass_path}".gpg
-  ssh_host_key_private_file="${control_center}"/sensitive-ansible-inventory/hosts/"${hostname}"/files/ssh_keys/ssh_host_rsa_key
-  ssh_host_key_public_file="${control_center}"/ansible-inventory/hosts/"${hostname}"/files/ssh_keys/ssh_host_rsa_key.pub
+  ssh_host_key_private_file="${sensitive_host_files}/ssh_keys/ssh_host_rsa_key"
+  ssh_host_key_public_file="${host_files}/ssh_keys/ssh_host_rsa_key.pub"
   lock_parent_dir=~/.mkvm/locks
   lock_path="${lock_parent_dir}"/"${hostname}"
   success_dir=~/.mkvm/success/"${hostname}"
