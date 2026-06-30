@@ -41,13 +41,11 @@ function main() {
   os='debian'
   release='trixie'
   version='13.5.0'
-  mem_gb='4'
-  mem_mb="$(( mem_gb * 1024 ))"
+  qemu_mem_gb='4'
   vm_image_size='10G'
   cpu_core_count=4
   subnet_with_mask="192.168.11.0/24"
   gateway="192.168.11.1"
-  cpu_model='Broadwell-v4'
   mcast='230.0.0.1:1234'
   ifname='eth0'
   local_net_id='vmnet'
@@ -80,18 +78,95 @@ function main() {
   arch="$(host_var 'cpu_architecture')"
 
 
+  genisoimage_boot_args=()
+  isohybrid=''
+  qemu_args_architecture=()
   case "${arch}" in
     'i386')
       initrd_path='install.386'
       qemu='qemu-system-i386'
+      genisoimage_boot_args=( 
+          '-b'          'isolinux/isolinux.bin' 
+          '-c'          'isolinux/boot.cat' 
+      )
+      isohybrid='yes'
+      qemu_args_architecture=( 
+          '-machine'    'accel=kvm' 
+          '-cpu'        'Broadwell-v4' )
+      #qemu_vga='virtio'
+      qemu_device_storage_main='ide-hd'
+      qemu_device_storage_optical='ide-cd'
+      qemu_mem_gb='4'
       ;;
     'amd64')
       initrd_path='install.amd'
       qemu='qemu-system-x86_64'
+      genisoimage_boot_args=( 
+          '-b'          'isolinux/isolinux.bin' 
+          '-c'          'isolinux/boot.cat' 
+      )
+      isohybrid='yes'
+      # -machine defaults to "pc-i440fx-10.0" aka "pc", so "-machine accel=kvm"
+      # seems equivalent to "-machine pc,accel=kvm".  A strict RTFM indicates
+      # that should not work, even though it (currently) does.  Check whether
+      # "-accel=kvm" could be used to more correctly specify acceleration
+      # without specifying a machine name.
+      #
+      # eg:
+      #
+      #         qemu_args_architecture=( '-accel=kvm' '-cpu' 'Broadwell-v4' )
+      #
+      # For now, these arguments have been working, so don't change them until
+      # ready to test the above concept.
+      qemu_args_architecture=( 
+          '-machine'    'accel=kvm' 
+          '-cpu'        'Broadwell-v4' )
+      # "virtio" is nicer for graphical control, but "std" also works, and may
+      # actually be easier to manage for curses-based installers.  ("virtio"
+      # resizes the output, which can confuse curses.  "std" uses fixed height
+      # and width, so a window may need to be resized, but output will not be
+      # broken.)  Since default vga output works for all tested architectures,
+      # all vga configuration could be removed, allowing qemu to just use
+      # whatever default it likes.  Any vga options required for further
+      # architectures can be added in architecture specific options.
+      #qemu_vga='virtio'
+      #qemu_vga='std'
+      qemu_device_storage_main='ide-hd'
+      qemu_device_storage_optical='ide-cd'
+      qemu_mem_gb='4'
       ;;
     'armhf')
       initrd_path='install.ahf'
       qemu='qemu-system-armhf'
+      genisoimage_boot_args=( 
+          '-b'          'boot/grub/efi.img' 
+          '-c'          'boot.catalog' 
+      )
+      isohybrid='no'
+      # KVM (accel=kvm) uses host CPU features to share CPU directly with
+      # guests.  Presumably it is not available when emulating a different
+      # architecture.
+      #
+      # "-cpu max" seems to mean something like "best CPU possible", although
+      # it is not documented in `man qemu-system-armhf` or `qemu-system-armhf
+      # -cpu help`.
+
+      qemu_args_architecture=( 
+          '-machine'    'virt' 
+          '-cpu'        'max' 
+      )
+      #qemu_args_architecture=( '-machine' 'orangepi-pc' )
+      #qemu_mem_gb='1'
+
+      # "-vga virtio" says it is "not available".  Does virtio rely on kvm or
+      # something?
+      #
+      # "cirrus" is the default, here.  If the default for amd64 ("std") also
+      # works, consider removing this variable and refraining from specifying
+      # "-vga" at all.
+      #qemu_vga='cirrus'
+      qemu_device_storage_main='virtio-blk-device'
+      qemu_device_storage_optical='virtio-blk-device'
       ;;
     *)
       fail "Unrecognized architecture:  '${arch}'"
@@ -127,9 +202,6 @@ function main() {
   case "${self_name}" in
     mkvm)
       mkvm
-      ;;
-    sshvm)
-      sshvm root@"staging-${hostname}"
       ;;
     *)
       fail "I don't know how to be '${self_name}'."
@@ -321,63 +393,74 @@ function launch_vm() {
     cp "${vm_image_clean}" "${vm_image_used}" || fail "Failed to copy clean VM image to used VM image."
   fi
   info "Launching VM."
-  boot_this_image "${vm_image_used}"
+  qemu_image_main="${vm_image_used}"
+  qemu_image_optical="${installer_image_generated}"
+  qemu_bootindex_optical='3'
+  boot_vm
   info "VM is down."
 }
 
 
-# boot_this_image <vm_image_file>
-boot_this_image() {
-  # What happens if there is no mcast specification?
-  # Can interface name (visible to OS) be specified for virtio-net-pci?
-  image_file="${1}"
+boot_vm() {
+  qemu_display='none'
+  #qemu_display='gtk'
 
-  # The first network interface will be labeled ens3, and the second will be
-  # ens4.  The preseed template specifies ens3 as the interface to configure.
-  net_args=()
+  qemu_args_clerical=(
+    '-name' "${hostname}"
+  )
+
+  qemu_args_net=()
   if test 'gateway' = "${hostname}"; then
-  net_args+=(
-    -netdev user,id="${upstream_net_id}",hostfwd=::"${ssh_unique_port}"-:22
-    -device virtio-net-pci,netdev="${upstream_net_id}"
-  )
+    qemu_args_net+=(
+      '-netdev'         "user,id=${upstream_net_id},hostfwd=::${ssh_unique_port}-:22"
+      '-device'         "virtio-net-pci,netdev=${upstream_net_id}"
+    )
   fi
-  net_args+=(
-    -device virtio-net-pci,netdev="${local_net_id}",mac="${mac_address}"
-    -netdev socket,id="${local_net_id}",mcast="${mcast}"
+  qemu_args_net+=(
+      '-device'         "virtio-net-pci,netdev=${local_net_id},mac=${mac_address}"
+      '-netdev'         "socket,id=${local_net_id},mcast=${mcast}"
   )
-  shift 1
 
-  "${qemu}" \
-    -name "${vm}" \
-    -machine accel=kvm \
-    -cpu "${cpu_model}" \
-    -smp cores="${cpu_core_count}" \
-    -m "${mem_mb}" \
-    "${net_args[@]}" \
-    -vga virtio \
-    -display none \
-    "${image_file}" \
-    "${@}" \
-  ;
-}
+  qemu_args_storage=(
+      '-drive'          "file=${qemu_image_main},if=none,id=main_storage"
+      '-device'         "${qemu_device_storage_main},drive=main_storage,bootindex=2"
+  )
+  if ! test '' == "${qemu_bootindex_optical}"; then
+    qemu_args_storage+=(
+      '-drive'          "file=${qemu_image_optical},if=none,id=optical_storage"
+      '-device'         "${qemu_device_storage_optical},drive=optical_storage,bootindex=${qemu_bootindex_optical}"
+    )
+  fi
 
+  #    '-vga'            "${qemu_vga}"
+  qemu_args_display=(
+      '-display'        "${qemu_display}"
+  )
 
-function wait_for_ssh() {
-  while 
-    ! sshvm root@staging-"${host}" whoami > /dev/null 2>&1
-  do
-    echo -n '.'
-    sleep 1
-  done
-}
+  qemu_mem_mb="$(( qemu_mem_gb * 1024 ))"
+  qemu_args_resource=(
+      '-smp'            "cores=${cpu_core_count}"
+      '-m'              "${qemu_mem_mb}"
+  )
 
+  qemu_args=(
+    "${qemu_args_clerical[@]}"
+    "${qemu_args_architecture[@]}"
+    "${qemu_args_resource[@]}"
+    "${qemu_args_net[@]}"
+    "${qemu_args_display[@]}"
+    "${qemu_args_storage[@]}"
+  )
 
-function sshvm() {
-  sshpass \
-    -d 3 \
-    ssh \
-      "${@}" \
-    3< <(pass show "${pass_path}")
+  #for word in ${qemu} ${qemu_args[@]}; do
+  #  info "qemu invocation:  ${word}"
+  #done
+
+  info "qemu invocation:  ${qemu} ${qemu_args[*]}"
+
+  "${qemu}" "${qemu_args[@]}"; ret="${?}"
+
+  return "${ret}"
 }
 
 
@@ -409,6 +492,22 @@ function repack_initrd() {
 
 
 function configure_boot() {
+  case "${arch}" in
+    'i386')
+      ;&
+    'amd64')
+      configure_isolinux
+      ;;
+    'armhf')
+      ;&
+    *)
+      return 0
+      ;;
+  esac
+}
+
+
+function configure_isolinux() {
   sed -i '/include gtk/ {d};' "${unpack}"/isolinux/menu.cfg || fail "Failed to remove GTK installer boot option."
   sed -i '/include spk/ {d};' "${unpack}"/isolinux/menu.cfg || fail "Failed to remove speech synthesis features from boot menu."
   sed -i -E 's/^(label install)/default install\n\1/' "${unpack}"/isolinux/txt.cfg || fail "Failed to make non-graphical installer boot option default."
@@ -431,8 +530,7 @@ function regenerate_checksums() {
 function repack_image() {
   genisoimage \
     -r -J \
-    -b "isolinux/isolinux.bin" \
-    -c "isolinux/boot.cat" \
+    "${genisoimage_boot_args[@]}" \
     -no-emul-boot \
     -boot-load-size 4 \
     -boot-info-table \
@@ -440,7 +538,9 @@ function repack_image() {
     "${unpack}/" \
     || fail "Failed to generate installer image:  '${installer_image_generated}'"
 
-  isohybrid "${installer_image_generated}" || fail "Failed to make installer image bootable:  '${installer_image_generated}'"
+  if test 'yes' == "${isohybrid}"; then
+    isohybrid "${installer_image_generated}" || fail "Failed to make installer image bootable:  '${installer_image_generated}'"
+  fi
 }
 
 
@@ -452,10 +552,10 @@ function initialize_vm_image() {
 
 function install_os() {
   info "Installing OS to clean VM image."
-  boot_this_image "${vm_image_clean}" \
-    -cdrom "${installer_image_generated}" \
-    -boot once=d \
-    || fail "Failed to install OS to clean VM image."
+  qemu_image_main="${vm_image_clean}"
+  qemu_image_optical="${installer_image_generated}"
+  qemu_bootindex_optical='1'
+  boot_vm || fail "Failed to install OS to clean VM image."
 }
 
 
