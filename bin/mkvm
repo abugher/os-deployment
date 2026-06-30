@@ -124,6 +124,11 @@ function main() {
       # enough to go through a system update, that would also require special
       # handling to update the kernel and initrd available to `mkvm`.
       #
+      # The Debian wiki specifically indicates that the CD (DVD?) images "don't
+      # work with qemu", and recommends using netboot installation instead.
+      #
+      #         https://wiki.debian.org/DebianInstaller/Qemu
+      #
       # Finish the configure_grub function to set a default menu entry and a timeout.
       initrd_path='install.ahf'
       qemu='qemu-system-armhf'
