@@ -10,6 +10,7 @@ function main() {
   self_path="${0%/*}"
 
   control_center="${self_path}/../.."
+  os_deployment="${control_center}/os-deployment"
 
   inventory_repo="${control_center}/ansible-inventory"
   inventory="${inventory_repo}/inventory.d"
@@ -88,7 +89,7 @@ function main() {
   success_file_preseed="${success_dir}/preseed"
   success_file_installer_image="${success_dir}/installer_image"
   success_file_vm_image="${success_dir}/vm_image"
-  preseed_template_dir="${control_center}"/os-deployment/preseed
+  preseed_template_dir="${os_deployment}/preseed"
   preseed_template_file="${preseed_template_dir}/${arch}-${os}-${release}.cfg"
   preseed_generated_dir=~/.mkvm/preseed/"${hostname}"
   # I think this has to be named "preseed.cfg".
