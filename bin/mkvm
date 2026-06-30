@@ -91,7 +91,7 @@ function main() {
       )
       isohybrid='yes'
       qemu_args_architecture=( 
-          '-machine'    'accel=kvm' 
+          '-accel'      'kvm'
           '-cpu'        'kvm32' )
       qemu_device_storage_main='ide-hd'
       qemu_device_storage_optical='ide-cd'
@@ -105,20 +105,8 @@ function main() {
           '-c'          'isolinux/boot.cat' 
       )
       isohybrid='yes'
-      # -machine defaults to "pc-i440fx-10.0" aka "pc", so "-machine accel=kvm"
-      # seems equivalent to "-machine pc,accel=kvm".  A strict RTFM indicates
-      # that should not work, even though it (currently) does.  Check whether
-      # "-accel=kvm" could be used to more correctly specify acceleration
-      # without specifying a machine name.
-      #
-      # eg:
-      #
-      #         qemu_args_architecture=( '-accel=kvm' '-cpu' 'Broadwell-v4' )
-      #
-      # For now, these arguments have been working, so don't change them until
-      # ready to test the above concept.
       qemu_args_architecture=( 
-          '-machine'    'accel=kvm' 
+          '-accel'      'kvm'
           '-cpu'        'kvm64' )
       qemu_device_storage_main='ide-hd'
       qemu_device_storage_optical='ide-cd'
@@ -132,14 +120,9 @@ function main() {
           '-c'          'boot.catalog' 
       )
       isohybrid='no'
-      # KVM (accel=kvm) uses host CPU features to share CPU directly with
-      # guests.  Presumably it is not available when emulating a different
-      # architecture.
-      #
       # "-cpu max" seems to mean something like "best CPU possible", although
       # it is not documented in `man qemu-system-armhf` or `qemu-system-armhf
       # -cpu help`.
-
       qemu_args_architecture=( 
           '-machine'    'virt' 
           '-cpu'        'max' 
