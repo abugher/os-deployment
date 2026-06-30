@@ -9,29 +9,35 @@ function main() {
   self_name="${0##*/}"
   self_path="${0%/*}"
 
+  if ! test 1 = "${#}"; then
+    fail "Wrong number of arguments.  Just specify a short hostname."
+  fi
+  hostname="${1}"
+  if test '' == "${hostname}"; then
+    fail "Invalid hostname:  '${hostname}'"
+  fi
+
   control_center="${self_path}/../.."
-  os_deployment="${control_center}/os-deployment"
+  os_deployment="${self_path}/.."
   ansible_environment="${control_center}/ansible-environment"
 
   inventory_script="${ansible_environment}/bin/inventory"
 
-  #inventory_repo="${control_center}/ansible-inventory"
-  #inventory="${inventory_repo}/inventory.d"
-  #host_vars="${inventory}/host_vars/${hostname}.yml"
-  #host_files="${inventory_repo}/hosts/${hostname}/files"
+  inventory_repo="${control_center}/ansible-inventory"
+  inventory="${inventory_repo}/inventory.d"
+  host_vars="${inventory}/host_vars/${hostname}.yml"
+  host_files="${inventory_repo}/hosts/${hostname}/files"
 
-  #sensitive_inventory_repo="${control_center}/sensitive-ansible-inventory"
-  #sensitive_inventory="${sensitive_inventory_repo}/inventory.d"
-  #sensitive_host_vars="${sensitive_inventory}/host_vars/${hostname}.yml"
-  #sensitive_host_files="${sensitive_inventory_repo}/hosts/${hostname}/files"
+  sensitive_inventory_repo="${control_center}/sensitive-ansible-inventory"
+  sensitive_inventory="${sensitive_inventory_repo}/inventory.d"
+  sensitive_host_vars="${sensitive_inventory}/host_vars/${hostname}.yml"
+  sensitive_host_files="${sensitive_inventory_repo}/hosts/${hostname}/files"
 
   #installer_images_original='/storage/bittorrent/content'
   installer_images_original=~/tmp
   # Without network, netinst does not even install sshd.
   #installer_type='netinst'
   installer_type='DVD-1'
-  #arch='armhf'
-  arch='amd64'
   os='debian'
   release='trixie'
   version='13.5.0'
@@ -46,14 +52,6 @@ function main() {
   ifname='eth0'
   local_net_id='vmnet'
   upstream_net_id='upnet'
-
-  if ! test 1 = "${#}"; then
-    fail "Wrong number of arguments.  Just specify a short hostname."
-  fi
-  hostname="${1}"
-  if test '' == "${hostname}"; then
-    fail "Invalid hostname:  '${hostname}'"
-  fi
 
   domain="$(host_var 'domain')"
   if test '' == "${domain}"; then
@@ -77,13 +75,23 @@ function main() {
     fail "Invalid SSH unique port number:  '${ssh_unique_port}'"
   fi
 
+  #arch='armhf'
+  #arch='amd64'
+  arch="$(host_var 'cpu_architecture')"
+
 
   case "${arch}" in
     'i386')
       initrd_path='install.386'
+      qemu='qemu-system-i386'
       ;;
     'amd64')
       initrd_path='install.amd'
+      qemu='qemu-system-x86_64'
+      ;;
+    'armhf')
+      initrd_path='install.ahf'
+      qemu='qemu-system-armhf'
       ;;
     *)
       fail "Unrecognized architecture:  '${arch}'"
@@ -339,7 +347,7 @@ boot_this_image() {
   )
   shift 1
 
-  qemu-system-x86_64 \
+  "${qemu}" \
     -name "${vm}" \
     -machine accel=kvm \
     -cpu "${cpu_model}" \
