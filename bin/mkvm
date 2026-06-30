@@ -93,7 +93,6 @@ function main() {
       qemu_args_architecture=( 
           '-machine'    'accel=kvm' 
           '-cpu'        'kvm32' )
-      #qemu_vga='virtio'
       qemu_device_storage_main='ide-hd'
       qemu_device_storage_optical='ide-cd'
       qemu_mem_gb='4'
@@ -121,16 +120,6 @@ function main() {
       qemu_args_architecture=( 
           '-machine'    'accel=kvm' 
           '-cpu'        'kvm64' )
-      # "virtio" is nicer for graphical control, but "std" also works, and may
-      # actually be easier to manage for curses-based installers.  ("virtio"
-      # resizes the output, which can confuse curses.  "std" uses fixed height
-      # and width, so a window may need to be resized, but output will not be
-      # broken.)  Since default vga output works for all tested architectures,
-      # all vga configuration could be removed, allowing qemu to just use
-      # whatever default it likes.  Any vga options required for further
-      # architectures can be added in architecture specific options.
-      #qemu_vga='virtio'
-      #qemu_vga='std'
       qemu_device_storage_main='ide-hd'
       qemu_device_storage_optical='ide-cd'
       qemu_mem_gb='4'
@@ -155,16 +144,6 @@ function main() {
           '-machine'    'virt' 
           '-cpu'        'max' 
       )
-      #qemu_args_architecture=( '-machine' 'orangepi-pc' )
-      #qemu_mem_gb='1'
-
-      # "-vga virtio" says it is "not available".  Does virtio rely on kvm or
-      # something?
-      #
-      # "cirrus" is the default, here.  If the default for amd64 ("std") also
-      # works, consider removing this variable and refraining from specifying
-      # "-vga" at all.
-      #qemu_vga='cirrus'
       qemu_device_storage_main='virtio-blk-device'
       qemu_device_storage_optical='virtio-blk-device'
       ;;
@@ -432,7 +411,6 @@ boot_vm() {
     )
   fi
 
-  #    '-vga'            "${qemu_vga}"
   qemu_args_display=(
       '-display'        "${qemu_display}"
   )
