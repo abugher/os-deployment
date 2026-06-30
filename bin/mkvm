@@ -113,6 +113,18 @@ function main() {
       qemu_mem_gb='4'
       ;;
     'armhf')
+      fail "qemu emulating ARM and/or u-boot firmware is known to fail to load grub as provided by the Debian installer image.  Giving up."
+      # This may provide insight into how to use U-Boot to load GRUB:
+      #
+      #         https://www.hellion.org.uk/blog/posts/grub-on-uboot-on-qemu/
+      #
+      # It seems more typical to specify -kernel and -initrd to qemu.  That
+      # will require a few steps, probably including extracting the kernel
+      # and/or initrd from the VM after installation.  If a VM is long lived
+      # enough to go through a system update, that would also require special
+      # handling to update the kernel and initrd available to `mkvm`.
+      #
+      # Finish the configure_grub function to set a default menu entry and a timeout.
       initrd_path='install.ahf'
       qemu='qemu-system-armhf'
       genisoimage_boot_args=( 
@@ -364,8 +376,8 @@ function launch_vm() {
 
 
 boot_vm() {
-  qemu_display='none'
-  #qemu_display='gtk'
+  #qemu_display='none'
+  qemu_display='gtk'
 
   qemu_args_clerical=(
     '-name' "${hostname}"
@@ -413,7 +425,7 @@ boot_vm() {
     "${qemu_args_storage[@]}"
   )
 
-  #info "qemu invocation:  ${qemu} ${qemu_args[*]}"
+  info "qemu invocation:  ${qemu} ${qemu_args[*]}"
 
   "${qemu}" "${qemu_args[@]}"; ret="${?}"
 
@@ -456,11 +468,17 @@ function configure_boot() {
       configure_isolinux
       ;;
     'armhf')
-      ;&
+      configure_grub
+      ;;
     *)
       return 0
       ;;
   esac
+}
+
+
+function configure_grub() {
+  return 1
 }
 
 
