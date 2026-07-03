@@ -7,31 +7,17 @@ network as observed during prototyping.
       configuration changes are necessary, but it bothers me that I don't
       understand.  It seems like this shouldn't be necessary, but routing
       through the gateway does not work without it.
-* Tunnel through the gateway to reach the staging deployment system, assumed to be (staging-)obsidian, and the staging DNS system, assumed to be (staging-)neuron.
-    * Forward the unique port for each host.
-    * SSH client configuration should direct connections to staging-obsidian to 127.0.0.1:2235.
-    * SSH client configuration should direct connections to staging-gateway similarly.
-    * qemu configuration should forward the unique port for gateway to the
-      right address on the intermediary network.
 
-    ssh -L 2233:192.168.11.81:22 -L 2235:192.168.11.54:22 root@staging-gateway
-    
-    * PROBLEM:  I can't forward the unique port for obsidian, because it is in use.
-        * I could shut down sshd.
-        * I could forward a different port and change my ssh client configuration.
-            * I could special case this somehow in ansible inventory.
-        * There could be a special host configuration.
-            * Not obsidian.
-            * Different unique port I can actually forward.
-            * Dedicated deployment host.
-            * No assigned roles and/or groups in inventory.
-            * Only used as the deployment host in staging.
+* Tunnel through the gateway to reach the staging deployment system, assumed to be (staging-)controller, and the staging DNS system, assumed to be (staging-)neuron.
+    * SSH client configuration should direct connections to the unique port on localhost.
+    * qemu configuration should forward the unique port for gateway from
+      localhost to the right address on the intermediary network.
+    * This command line should forward connections to unique ports through
+      staging-gateway to staging systems.
 
-* WORK-AROUND:  Shut down sshd.
+    ssh -L 2238:192.168.11.82:22 -L 2235:192.168.11.54:22 root@staging-gateway
 
-    sudo service ssh stop
-
-* Temporarily reverse tunnel DNS requests (TCP only) from staging-obsidian
+* Temporarily reverse tunnel DNS requests (TCP only) from staging-controller
   through the host system to real neuron.
     * Temporary!
     * Use this until staging-neuron can be configured via ansible to serve DNS.
@@ -40,14 +26,14 @@ network as observed during prototyping.
         * Otherwise the next step could use an internet DNS server.
     * Also forward SSH keys.
 
-    ssh -A -R 53:192.168.11.54:53 root@staging-obsidian
+    ssh -A -R 53:192.168.11.54:53 root@staging-controller
 
 * Create a second tunnel for DNS to the staging DNS system, assumed to be (staging)-neuron.
     * Same caveats; this might not be necessary.
 
     ssh -R 53:192.168.11.54:53 root@staging-neuron
 
-* Temporarily configure DNS on staging-obsidian and staging-neuron.
+* Temporarily configure DNS on staging-controller and staging-neuron.
     * Direct requests to 127.0.0.1, relying on reverse tunnel.
     * Specify TCP only.
     * /etc/resolv.conf:
@@ -55,16 +41,16 @@ network as observed during prototyping.
     nameserver 127.0.0.1
     options use-vc
 
-* Install rsync, ansible, pass, gpg, gpg-agent, and probably some other stuff, on staging-obsidian.
+* Install rsync, ansible, pass, and dependencies, on staging-controller.
 
     apt update
     apt install -y rsync ansible pass
 
-* Sync a copy of the control center to staging-obsidian.
+* Sync a copy of the control center to staging-controller.
 
-    rsync --progress -v -rlp --delete ./control-center/ root@staging-obsidian:control-center/
+    rsync --progress -v -rlp --delete ./control-center/ root@staging-controller:control-center/
 
-* Copy GPG key to staging-obsidian.
+* Copy GPG key to staging-controller.
     * Forwarding looks like a pain.
         * https://wiki.gnupg.org/AgentForwarding
     * If we're feeling fancy, there could probably be a non-root user for deployment.
@@ -72,12 +58,12 @@ network as observed during prototyping.
         * "aaron" might be a sensible choice.
     * This could probably be a whole separate key with access to a small subset of passwords.
 
-    rsync -rlp --delete ~/.gnupg/ root@staging-obsidian:.gnupg/
+    rsync -rlp --delete ~/.gnupg/ root@staging-controller:.gnupg/
 
-* Sync passwords to staging-obsidian.
+* Sync passwords to staging-controller.
     * Same caveats as gpg above.
 
-    rsync -rlp --delete ~/.password-store/ root@staging-obsidian:.password-store/
+    rsync -rlp --delete ~/.password-store/ root@staging-controller:.password-store/
 
 * ... probably sync over that stupid pinentry wrapper referred to by my gpg configuration.
 
@@ -99,5 +85,5 @@ network as observed during prototyping.
                     * Maybe also initial deployment.
                     * Review deployment process to be sure.
                 * Not pulled in by `deploy-host` or any other roles.
-    * To staging-obsidian (localhost):  `ansible-master`
+    * To staging-controller (localhost):  `ansible-master`
     * To staging-neuron (neuron):  `ansible-target`, `dns-internal`
