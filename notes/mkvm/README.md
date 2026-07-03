@@ -128,14 +128,18 @@ their real counterparts.
 
 ## DNS
 
-This is the current problem.  The staging gateway can be deployed
-without the second interface configured, as a member of the intermediary
-network only.  It uses the real DNS server on the real LAN.  Once the
-staging network is brought up, that is no longer available.  That means
-the netinstall process cannot find Debian repo servers, causing
-installation to fail.  That is stopping me from deploying a staging
-version of the DNS server.  This might be solved just by using an
-offline install medium ("disc one"), especially if it can provide enough
-packages to bring up the staging DNS server.  Otherwise, it might be
-necessary to set up some temporary DNS forwarding, then break that once
-the staging DNS server is up ... but I hope not.
+The staging gateway can be deployed without the second interface configured, as
+a member of the intermediary network only.  It uses the real DNS server on the
+real LAN.  Once the staging network is brought up, that is no longer available.
+Effectively, the installation must be done without internet access.  For that
+reason, the big DVD installer is being used instead of netinstall.
+
+To provide temporary DNS to a system on the staging network, until the staging
+DNS server is set up, use SSH to reverse-forward port 53 from the staging
+system out to the real DNS server, then configure `/etc/resolv.conf` on the
+staging system to use TCP for DNS:
+
+    nameserver 127.0.0.1
+    options use-vc
+
+See `bootstrap.md` for current progress and procedures.

@@ -74,8 +74,8 @@ function main() {
   fi
 
   #arch='armhf'
-  #arch='amd64'
-  arch="$(host_var 'cpu_architecture')"
+  arch='amd64'
+  #arch="$(host_var 'cpu_architecture')"
 
 
   genisoimage_boot_args=()
@@ -163,7 +163,7 @@ function main() {
   success_file_installer_image="${success_dir}/installer_image"
   success_file_vm_image="${success_dir}/vm_image"
   preseed_template_dir="${os_deployment}/preseed"
-  preseed_template_file="${preseed_template_dir}/${arch}-${os}-${release}.cfg"
+  preseed_template_file="${preseed_template_dir}/${os}-${release}.cfg"
   preseed_generated_dir=~/.mkvm/preseed/"${hostname}"
   # I think this has to be named "preseed.cfg".
   preseed_generated_file="${preseed_generated_dir}/preseed.cfg"
@@ -233,6 +233,14 @@ function remove_stale_files() {
     ! test -e "${success_file_preseed}" \
     || ! test -e "${preseed_template_file}" \
     || ! test "${preseed_generated_file}" -nt "${preseed_template_file}" \
+    || test "${hostname}" == 'gateway' \
+      -a test "${preseed_generated_file}" -nt "${preseed_template_dir}/gateway/late.txt" \
+    || test "${hostname}" != 'gateway' \
+      -a test "${preseed_generated_file}" -nt "${preseed_template_dir}/non-gateway/late.txt" \
+    || test "${hostname}" == 'gateway' \
+      -a test "${preseed_generated_file}" -nt "${preseed_template_dir}/gateway/netcfg.txt" \
+    || test "${hostname}" != 'gateway' \
+      -a test "${preseed_generated_file}" -nt "${preseed_template_dir}/non-gateway/netcfg.txt" \
     || ! test -e "${pass_file}" \
     || ! test "${preseed_generated_file}" -nt "${pass_file}" \
     || ! test -e "${ssh_host_key_private_file}" \
@@ -381,8 +389,8 @@ function launch_vm() {
 
 
 boot_vm() {
-  #qemu_display='none'
-  qemu_display='gtk'
+  qemu_display='none'
+  #qemu_display='gtk'
 
   qemu_args_clerical=(
     '-name' "${hostname}"
@@ -430,7 +438,7 @@ boot_vm() {
     "${qemu_args_storage[@]}"
   )
 
-  info "qemu invocation:  ${qemu} ${qemu_args[*]}"
+  #info "qemu invocation:  ${qemu} ${qemu_args[*]}"
 
   "${qemu}" "${qemu_args[@]}"; ret="${?}"
 
