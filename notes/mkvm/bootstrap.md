@@ -15,7 +15,7 @@ network as observed during prototyping.
     * This command line should forward connections to unique ports through
       staging-gateway to staging systems.
 
-    ssh -L 2238:192.168.11.82:22 -L 2235:192.168.11.54:22 root@staging-gateway
+    ssh -L 2238:192.168.11.83:22 -L 2235:192.168.11.54:22 root@staging-gateway
 
 * Temporarily reverse tunnel DNS requests (TCP only) from staging-controller
   through the host system to real neuron.
