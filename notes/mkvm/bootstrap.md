@@ -46,20 +46,14 @@ network as observed during prototyping.
     apt update
     apt install -y rsync ansible pass
 
-* Sync a copy of the control center to staging-controller.
-
-    rsync --progress -v -rlp --delete ./control-center/ root@staging-controller:control-center/
-
 * Copy GPG key to staging-controller.
     * Forwarding looks like a pain.
         * https://wiki.gnupg.org/AgentForwarding
     * If we're feeling fancy, there could probably be a non-root user for deployment.
         * "ansible-master" or something, maybe.
         * "aaron" might be a sensible choice.
-
-    #rsync -rlp --delete ~/.gnupg/ root@staging-controller:.gnupg/
-
-    * This could probably be a whole separate key with access to a small subset of passwords.
+    * Create and use a separate key/identity with access to a small subset of
+      passwords.
 
     # Recording the one time process to generate such a key.
     #
@@ -71,23 +65,58 @@ network as observed during prototyping.
     dp aaron/staging-controller-gpg-passphrase
     # See the pass phrase, so it can be copied and pasted in a moment.
     pass show aaron/staging-controller-gpg-passphrase
+
     # Generate the new PGP identity and key.
     #
     # Enter the passphrase when prompted.
-    gpg --homedir ~/.gnupg-controller --quick-gen-key controller rsa4096 default never
+    #
+    # If "encr" is not specified, expect errors like this when trying to use
+    # pass to give access to certain passwords to controller:
+    #
+    #   gpg: [long key]: skipped: Unusable public key
+    #
+    gpg --homedir ~/.gnupg-controller --quick-gen-key controller rsa4096 sign,encr never
     # Import new public key into main personal keychain.
     gpg --homedir ~/.gnupg-controller --export controller | gpg --import
     # Sign key.
     new_key_fpr="$(gpg --homedir ~/.gnupg-controller --with-colons -K | awk -F : '/^fpr:/ {print $10}')"
     gpg --command-fd 0 --sign-key "${new_key_fpr}" <<< "$(printf '%s\n%s\n' 'y' 'y')"
-    # pass ... This part gets weird.
-    cd ~/.password-store/
-    mkdir controller
-    cd ~/.password-store/controller
-    echo "${new_key_fpr}" > .gpg-id
-    gpg --with-colons -K | awk -F : '/^fpr:/ {print $10}' | head -n 1 >> .gpg-id
 
-    ## CONTINUE HERE -- WRITING IN PROGRESS
+    #
+    # pass ... This part gets weird.
+    #
+
+    my_key_fpr="$(gpg --with-colons -K | awk -F : '/^fpr:/ {print $10}' | head -n 1)"
+
+    # GPG "trust level" is not necessary, so skip this.
+    #gpg --quick-set-ownertrust "${new_key_fpr}" full
+
+    # Initialize (reinitialize) some directories to give access to the
+    # controller identity.
+    # 
+    # All keys in an initialized directory get reencrypted to the new key and the
+    # personal key.  Notably, the output only seems to indicate they are being
+    # encrypted to the old key, but experimentation shows they are accessible
+    # with the new key.  pass mv aaron/files controller/files
+    #
+    # The controller identify does not have and should not need access to all
+    # root passwords.  A forwarded SSH key should enable SSH access as root to
+    # all staging hosts.
+    pass init -p aaron/neuron-mail "${new_key_fpr}" "${my_key_fpr}"
+    pass init -p aaron/neuron "${new_key_fpr}" "${my_key_fpr}"
+    pass init -p aaron/files "${new_key_fpr}" "${my_key_fpr}"
+    pass init -p shared/vpn "${new_key_fpr}" "${my_key_fpr}"
+
+    # Sync the key/identity dedicated for this purpose.
+    rsync -rlp --delete ~/.gnupg-controller/ root@staging-controller:.gnupg/
+
+
+* Sync a copy of the control center to staging-controller.
+
+    rsync --progress -v -rlp --delete ./control-center/ root@staging-controller:control-center/
+
+
+* PROGRESS POINT -- CONTINUE EDITING HERE
 
 
 * Sync passwords to staging-controller.
