@@ -56,9 +56,39 @@ network as observed during prototyping.
     * If we're feeling fancy, there could probably be a non-root user for deployment.
         * "ansible-master" or something, maybe.
         * "aaron" might be a sensible choice.
+
+    #rsync -rlp --delete ~/.gnupg/ root@staging-controller:.gnupg/
+
     * This could probably be a whole separate key with access to a small subset of passwords.
 
-    rsync -rlp --delete ~/.gnupg/ root@staging-controller:.gnupg/
+    # Recording the one time process to generate such a key.
+    #
+    # Create home directory for new identity.
+    mkdir ~/.gnupg-controller
+    # Fix permissions to avoid warnings later.
+    chmod 0700 ~/.gnupg-controller
+    # Generate and store a a pass phrase to use with the new PGP identity.
+    dp aaron/staging-controller-gpg-passphrase
+    # See the pass phrase, so it can be copied and pasted in a moment.
+    pass show aaron/staging-controller-gpg-passphrase
+    # Generate the new PGP identity and key.
+    #
+    # Enter the passphrase when prompted.
+    gpg --homedir ~/.gnupg-controller --quick-gen-key controller rsa4096 default never
+    # Import new public key into main personal keychain.
+    gpg --homedir ~/.gnupg-controller --export controller | gpg --import
+    # Sign key.
+    new_key_fpr="$(gpg --homedir ~/.gnupg-controller --with-colons -K | awk -F : '/^fpr:/ {print $10}')"
+    gpg --command-fd 0 --sign-key "${new_key_fpr}" <<< "$(printf '%s\n%s\n' 'y' 'y')"
+    # pass ... This part gets weird.
+    cd ~/.password-store/
+    mkdir controller
+    cd ~/.password-store/controller
+    echo "${new_key_fpr}" > .gpg-id
+    gpg --with-colons -K | awk -F : '/^fpr:/ {print $10}' | head -n 1 >> .gpg-id
+
+    ## CONTINUE HERE -- WRITING IN PROGRESS
+
 
 * Sync passwords to staging-controller.
     * Same caveats as gpg above.
